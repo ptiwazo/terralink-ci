@@ -19,7 +19,7 @@ from app.models.enums import CommandeStatut, OffreStatut, Role
 from app.models.offre import Offre
 from app.models.user import User
 from app.schemas.commande import CommandeCreate
-from app.services import audit_service
+from app.services import audit_service, escrow_service
 from app.services.state_machine import TransitionError, verifier_et_cibler
 
 
@@ -180,6 +180,12 @@ def appliquer_transition(
         ressource_id=commande.id,
         details={"de": ancien.value, "vers": cible.value},
     )
+
+    # À la livraison conforme, on libère les fonds dans la MÊME transaction
+    # (livraison ⇒ paiement, tout-ou-rien). La commande termine en FONDS_LIBERES.
+    if cible == CommandeStatut.LIVREE_CONFORME:
+        escrow_service.liberer_fonds_sans_commit(db, commande, user)
+
     db.commit()
     db.refresh(commande)
     return commande

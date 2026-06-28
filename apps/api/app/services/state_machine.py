@@ -33,15 +33,12 @@ class Transition:
 ROLES_INTERNES = (Role.OPS, Role.ADMIN)
 
 TRANSITIONS: dict[str, Transition] = {
+    # Note : CREEE → PAYEE_SEQUESTRE n'est PAS une transition manuelle. Ce passage
+    # est piloté exclusivement par l'escrow (dépôt confirmé par webhook signé),
+    # pour qu'aucune commande ne soit « payée » sans fonds réellement séquestrés.
+    # De même, LIVREE_CONFORME → FONDS_LIBERES est déclenché par la libération
+    # des fonds, au sein de la transition CONFIRMER_RECEPTION.
     # --- Phase 1 ---
-    "SIMULER_PAIEMENT": Transition(
-        action="SIMULER_PAIEMENT",
-        sources=(S.CREEE,),
-        cible=S.PAYEE_SEQUESTRE,
-        roles=(Role.ACHETEUR,),
-        proprietaire="acheteur",
-        phase=1,
-    ),
     "PREPARER": Transition(
         action="PREPARER",
         sources=(S.PAYEE_SEQUESTRE, S.AVANCE_VERSEE),

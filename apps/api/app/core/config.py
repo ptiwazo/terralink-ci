@@ -31,6 +31,14 @@ class Settings(BaseSettings):
     # Environnement
     environment: str = "dev"
 
+    # --- Paiement / Escrow (Phase 2) ---
+    # Fournisseur de paiement actif : "sandbox" (dev/tests) ou "mobile_money".
+    payment_provider: str = "sandbox"
+    # Secret de signature des webhooks entrants (HMAC). À surcharger en prod.
+    webhook_secret: str = "dev-webhook-secret-a-changer"
+    # Commission de la plateforme en points de base (500 = 5,00 %). Entier.
+    commission_bps: int = 500
+
 
 @lru_cache
 def get_settings() -> Settings:

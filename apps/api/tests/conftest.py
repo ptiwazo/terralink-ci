@@ -118,6 +118,16 @@ def creer_utilisateur(client, role: str, nom: str = "Utilisateur Test") -> dict:
     }
 
 
+def payer_commande(client, acheteur_headers: dict, commande_id: str) -> dict:
+    """Paie une commande via l'escrow (le sandbox confirme automatiquement le
+    dépôt). Renvoie l'escrow."""
+    resp = client.post(
+        f"/api/v1/commandes/{commande_id}/payer", headers=acheteur_headers
+    )
+    assert resp.status_code == 200, resp.text
+    return resp.json()
+
+
 def creer_interne(db_session, role: str, nom: str = "Agent Interne") -> dict:
     """Crée un utilisateur OPS/ADMIN directement en base (non inscriptible via API)
     et forge un token d'accès valide."""

@@ -24,6 +24,8 @@ export const STATUT_COULEUR: Record<string, string> = {
   EN_PREPARATION: "bg-amber-100 text-amber-700",
   EN_LIVRAISON: "bg-indigo-100 text-indigo-700",
   LIVREE_CONFORME: "bg-green-100 text-green-700",
+  FONDS_LIBERES: "bg-green-100 text-green-800",
+  CLOTUREE: "bg-green-100 text-green-800",
 };
 
 interface ActionDispo {
@@ -35,10 +37,7 @@ interface ActionDispo {
 // l'autorisation réelle est vérifiée côté serveur).
 export function actionsDisponibles(statut: string, role: Role): ActionDispo[] {
   switch (statut) {
-    case "CREEE":
-      return role === "ACHETEUR" || role === "OPS" || role === "ADMIN"
-        ? [{ action: "SIMULER_PAIEMENT", label: "Payer (simulation)" }]
-        : [];
+    // CREEE → le paiement passe par l'escrow (bouton dédié, pas une transition).
     case "PAYEE_SEQUESTRE":
     case "AVANCE_VERSEE":
       return role === "PRODUCTEUR" || role === "OPS" || role === "ADMIN"

@@ -203,6 +203,24 @@ export const api = {
       { method: "POST", body: JSON.stringify({ action }) },
       token
     ),
+
+  // --- Escrow (Phase 2) ---
+  payerCommande: (token: string, id: string) =>
+    request<Escrow>(`/commandes/${id}/payer`, { method: "POST" }, token),
+
+  escrow: (token: string, id: string) =>
+    request<Escrow>(`/commandes/${id}/escrow`, {}, token),
 };
+
+export interface Escrow {
+  id: string;
+  commande_id: string;
+  montant: number;
+  commission: number;
+  montant_net: number;
+  statut: "EN_ATTENTE" | "SEQUESTRE" | "LIBERE" | "REMBOURSE";
+  ref_depot: string | null;
+  ref_paiement: string | null;
+}
 
 export { ApiError };

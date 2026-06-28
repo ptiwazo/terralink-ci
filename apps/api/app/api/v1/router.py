@@ -7,6 +7,7 @@ from app.api.v1.routes import (
     commandes,
     dashboard,
     offres,
+    paiements,
     produits,
     users,
 )
@@ -19,3 +20,4 @@ api_router.include_router(produits.router)
 api_router.include_router(offres.router)
 api_router.include_router(catalogue.router)
 api_router.include_router(commandes.router)
+api_router.include_router(paiements.router)

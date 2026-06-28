@@ -3,24 +3,36 @@
 Place de marché B2B agricole pour la Côte d'Ivoire (escrow, trésorerie, logistique).
 Interface en français. Voir [CLAUDE.md](./CLAUDE.md) pour la spécification complète.
 
-> **État actuel : Phase 1 — Catalogue & commandes (sans argent).**
+> **État actuel : Phase 2 — Escrow (cœur financier).**
 > Phase 0 : auth téléphone, rôles, contrôle d'accès serveur, tableau de bord.
-> Phase 1 : catalogue de référence, offres géolocalisées (CRUD producteur),
-> recherche acheteur (produit/proximité/délai), commandes avec montant calculé
-> serveur + décrément de stock atomique, et **machine à états** explicite
-> jusqu'à `LIVREE_CONFORME` (paiement *simulé*, sans mouvement de fonds).
-> Les phases suivantes (escrow réel, logistique, trésorerie) ne sont pas encore
-> implémentées.
+> Phase 1 : catalogue, offres géolocalisées, commandes (montant serveur +
+> stock atomique), machine à états explicite.
+> Phase 2 : **grand livre append-only en partie double**, séquestre des fonds à
+> la commande (dépôt confirmé par **webhook signé**), **libération à la livraison
+> conforme** avec commission plateforme, via une abstraction `PaymentProvider`
+> (`SandboxProvider` actif ; squelette Mobile Money). Idempotence (clés +
+> contrainte unique), double validation des montants, atomicité tout-ou-rien.
+> Les phases suivantes (logistique, trésorerie) ne sont pas encore implémentées.
 
-### Parcours Phase 1 (dans le navigateur)
+### Parcours Phase 1-2 (dans le navigateur)
 
-1. Créer un compte **Producteur** → onglet **Mes offres** → publier une offre
-   (produit, quantité, prix FCFA, géoloc).
-2. Créer un compte **Acheteur** → onglet **Catalogue** → rechercher, saisir une
-   quantité, **Commander**.
-3. Suivre dans **Commandes** : l'acheteur « Paie (simulation) », le producteur
-   « Prépare » puis « Expédie », l'acheteur « Confirme réception ».
-   Chaque action n'est permise qu'au bon rôle (vérifié côté serveur).
+1. Compte **Producteur** → **Mes offres** → publier une offre (prix FCFA, géoloc).
+2. Compte **Acheteur** → **Catalogue** → saisir une quantité, **Commander**.
+3. **Commandes** : l'acheteur clique **Payer (séquestre)** → les fonds sont
+   séquestrés (dépôt + webhook signé en sandbox), la commande passe *Payée
+   (séquestre)*. Le producteur **Prépare** puis **Expédie**. L'acheteur
+   **Confirme réception** → les fonds sont **libérés** (commission prélevée,
+   payout producteur), la commande passe *Fonds libérés*.
+
+### Notes Escrow (Phase 2)
+
+- Comptes du grand livre : `ESCROW`, `COMMISSION`, `EXTERNE`, `PRODUCTEUR:<id>`.
+  Toute écriture est équilibrée (somme = 0) ; le **solde global vaut toujours 0**.
+- Commission plateforme : `COMMISSION_BPS` (défaut 500 = 5 %), calculée serveur.
+- Webhook entrant : `POST /api/v1/webhooks/paiement`, authentifié par **signature
+  HMAC** (`WEBHOOK_SECRET`) — pas par JWT (exception machine-à-machine).
+- Fournisseur : `PAYMENT_PROVIDER=sandbox` (auto-confirme). Le branchement Mobile
+  Money réel est laissé en TODO documentés (aucune API inventée).
 
 ## Stack figée
 

@@ -41,6 +41,15 @@ class ModePaiement(str, enum.Enum):
     DIFFERE = "DIFFERE"
 
 
+class EscrowStatut(str, enum.Enum):
+    """Cycle de vie du séquestre d'une commande (CLAUDE.md §4)."""
+
+    EN_ATTENTE = "EN_ATTENTE"  # dépôt initié, en attente de confirmation
+    SEQUESTRE = "SEQUESTRE"    # fonds bloqués (dépôt confirmé)
+    LIBERE = "LIBERE"          # fonds libérés au producteur
+    REMBOURSE = "REMBOURSE"    # fonds remboursés à l'acheteur (litige, Phase 3)
+
+
 class CommandeStatut(str, enum.Enum):
     """Statuts de la machine à états des commandes (CLAUDE.md §5).
 

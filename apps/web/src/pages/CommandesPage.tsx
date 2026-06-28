@@ -35,6 +35,19 @@ export default function CommandesPage() {
     }
   }
 
+  async function payer(id: string) {
+    if (!token) return;
+    setErreur(null);
+    try {
+      await api.payerCommande(token, id);
+      await charger();
+    } catch (err) {
+      setErreur(err instanceof ApiError ? err.message : "Paiement impossible");
+    }
+  }
+
+  const peutPayer = user?.role === "ACHETEUR" || user?.role === "OPS" || user?.role === "ADMIN";
+
   return (
     <Layout>
       <h1 className="mb-4 text-xl font-bold">Mes commandes</h1>
@@ -60,19 +73,25 @@ export default function CommandesPage() {
                   {STATUT_LABELS[c.statut] ?? c.statut}
                 </span>
               </div>
-              {actions.length > 0 && (
-                <div className="mt-3 flex gap-2">
-                  {actions.map((a) => (
-                    <button
-                      key={a.action}
-                      onClick={() => transition(c.id, a.action)}
-                      className="rounded-lg bg-terra-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-terra-800"
-                    >
-                      {a.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className="mt-3 flex gap-2">
+                {c.statut === "CREEE" && peutPayer && (
+                  <button
+                    onClick={() => payer(c.id)}
+                    className="rounded-lg bg-terra-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-terra-800"
+                  >
+                    Payer (séquestre)
+                  </button>
+                )}
+                {actions.map((a) => (
+                  <button
+                    key={a.action}
+                    onClick={() => transition(c.id, a.action)}
+                    className="rounded-lg bg-terra-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-terra-800"
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
             </div>
           );
         })}
