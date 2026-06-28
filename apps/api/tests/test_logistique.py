@@ -11,6 +11,7 @@ from tests.conftest import (
     creer_offre,
     creer_transporteur_valide,
     creer_utilisateur,
+    livrer_comptant,
     payer_commande,
 )
 
@@ -150,6 +151,37 @@ def test_mes_courses_transporteur(client, produit_id, db_session):
     assert courses[0]["commande_id"] == cid
     assert courses[0]["livraison"]["statut"] == "EN_COURS"
     assert "×" in courses[0]["produits"]
+
+
+def test_notation_transporteur(client, produit_id, db_session):
+    res = livrer_comptant(client, db_session, produit_id)  # livrée -> FONDS_LIBERES
+    r = client.post(
+        f"/api/v1/commandes/{res['cid']}/noter-transporteur",
+        headers=res["ach"]["headers"],
+        json={"note": 5},
+    )
+    assert r.status_code == 200 and r.json()["note_transporteur"] == 5
+
+
+def test_notation_avant_livraison_refusee(client, produit_id, db_session):
+    prod, ach, cmd = _commande_payee(client, produit_id)  # pas encore livrée
+    r = client.post(
+        f"/api/v1/commandes/{cmd['id']}/noter-transporteur",
+        headers=ach["headers"],
+        json={"note": 4},
+    )
+    assert r.status_code == 409
+
+
+def test_notation_par_autre_refusee(client, produit_id, db_session):
+    res = livrer_comptant(client, db_session, produit_id)
+    autre = creer_utilisateur(client, "ACHETEUR")
+    r = client.post(
+        f"/api/v1/commandes/{res['cid']}/noter-transporteur",
+        headers=autre["headers"],
+        json={"note": 5},
+    )
+    assert r.status_code == 403
 
 
 def test_position_par_transporteur_assigne(client, produit_id, db_session):

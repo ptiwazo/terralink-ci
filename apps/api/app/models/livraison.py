@@ -10,6 +10,7 @@ from sqlalchemy import (
     DateTime,
     Enum as SAEnum,
     ForeignKey,
+    Integer,
     String,
     func,
 )
@@ -41,6 +42,7 @@ class Livraison(Base):
     code_remise_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     assurance_ref: Mapped[str | None] = mapped_column(String(60), nullable=True)
     gps_traces: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    note_transporteur: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

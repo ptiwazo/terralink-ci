@@ -24,6 +24,10 @@ class ResolutionRequest(BaseModel):
     sens: str = Field(description="REMBOURSE (acheteur) ou LIBERE (producteur)")
 
 
+class NotationRequest(BaseModel):
+    note: int = Field(ge=1, le=5)
+
+
 class LivraisonPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -34,6 +38,7 @@ class LivraisonPublic(BaseModel):
     assurance_ref: str | None
     gps_traces: list
     livree_at: datetime | None
+    note_transporteur: int | None
 
 
 class AssignationResponse(BaseModel):

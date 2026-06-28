@@ -25,6 +25,7 @@ export default function CommandesPage() {
   const [choixTransporteur, setChoixTransporteur] = useState<Record<string, string>>({});
   const [codeRevele, setCodeRevele] = useState<Record<string, string>>({});
   const [codeSaisi, setCodeSaisi] = useState<Record<string, string>>({});
+  const [notes, setNotes] = useState<Record<string, number>>({});
 
   const role = user?.role;
   const estProducteur = role === "PRODUCTEUR";
@@ -125,6 +126,19 @@ export default function CommandesPage() {
     }
   }
 
+  const NOTABLES = ["LIVREE_CONFORME", "FONDS_LIBERES", "CLOTUREE", "RESOLUE_LIBEREE"];
+
+  async function noter(cid: string, note: number) {
+    if (!token) return;
+    setErreur(null);
+    try {
+      await logistique.noterTransporteur(token, cid, note);
+      setNotes((n) => ({ ...n, [cid]: note }));
+    } catch (err) {
+      setErreur(err instanceof ApiError ? err.message : "Notation impossible");
+    }
+  }
+
   return (
     <Layout>
       <h1 className="mb-4 text-xl font-bold">Mes commandes</h1>
@@ -170,7 +184,7 @@ export default function CommandesPage() {
                     <option value="">Choisir un transporteur…</option>
                     {transporteurs.map((t) => (
                       <option key={t.id} value={t.id}>
-                        {t.vehicule} ({t.immatriculation})
+                        {t.vehicule} ({t.immatriculation}){t.note != null ? ` — ★${t.note}` : ""}
                       </option>
                     ))}
                   </select>
@@ -241,6 +255,20 @@ export default function CommandesPage() {
                     className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
                     Télécharger la facture
                   </button>
+                </div>
+              )}
+
+              {/* Notation du transporteur (acheteur, après livraison) */}
+              {role === "ACHETEUR" && NOTABLES.includes(c.statut) && (
+                <div className="mt-3 flex items-center gap-1 text-sm">
+                  <span className="mr-1 text-gray-500">Noter le transporteur :</span>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button key={n} onClick={() => noter(c.id, n)} title={`${n}/5`}
+                      className={`text-lg ${notes[c.id] && n <= notes[c.id] ? "text-amber-500" : "text-gray-300 hover:text-amber-400"}`}>
+                      ★
+                    </button>
+                  ))}
+                  {notes[c.id] && <span className="ml-2 text-xs text-green-600">Merci !</span>}
                 </div>
               )}
 

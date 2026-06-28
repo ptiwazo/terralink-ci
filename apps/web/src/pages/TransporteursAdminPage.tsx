@@ -47,7 +47,10 @@ export default function TransporteursAdminPage() {
         {liste.map((t) => (
           <div key={t.id} className="flex items-center justify-between rounded-xl bg-white p-4 shadow">
             <div>
-              <div className="font-medium">{t.vehicule} · {t.immatriculation}</div>
+              <div className="font-medium">
+                {t.vehicule} · {t.immatriculation}
+                {t.note != null && <span className="ml-2 text-amber-500">★ {t.note}</span>}
+              </div>
               <div className="text-sm text-gray-500">Caution : {formatFCFA(t.caution_deposee)}</div>
               <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${COULEUR[t.statut]}`}>
                 {t.statut}

@@ -54,6 +54,9 @@ export default function TransporteurPage() {
           <div className="text-lg font-medium">{profil.vehicule}</div>
           <div className="text-sm text-gray-500">Immatriculation : {profil.immatriculation}</div>
           <div className="text-sm text-gray-500">Caution : {formatFCFA(profil.caution_deposee)}</div>
+          <div className="text-sm text-gray-500">
+            Note moyenne : {profil.note != null ? `★ ${profil.note} / 5` : "pas encore notée"}
+          </div>
           <div className="mt-2">
             <span className={`rounded-full px-3 py-1 text-sm font-medium ${
               profil.statut === "VALIDE" ? "bg-green-100 text-green-700"

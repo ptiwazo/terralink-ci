@@ -15,6 +15,7 @@ from app.schemas.livraison import (
     AssignerRequest,
     ConfirmerReceptionRequest,
     LivraisonPublic,
+    NotationRequest,
     PositionRequest,
     ResolutionRequest,
 )
@@ -66,6 +67,19 @@ def ajouter_position(
 ):
     try:
         return livraison_service.ajouter_position(db, commande_id, user, data.lat, data.lng)
+    except LivraisonError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message)
+
+
+@router.post("/{commande_id}/noter-transporteur", response_model=LivraisonPublic)
+def noter_transporteur(
+    commande_id: uuid.UUID,
+    data: NotationRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    try:
+        return livraison_service.noter_transporteur(db, commande_id, user, data.note)
     except LivraisonError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message)
 

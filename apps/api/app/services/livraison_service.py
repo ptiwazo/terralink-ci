@@ -9,7 +9,7 @@ l'acheteur n'aboutit QUE si le bon code est présenté — sinon la livraison ne
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.security import generer_code_remise, hash_code, verify_code
@@ -139,6 +139,50 @@ def ajouter_position(
     trace = {"lat": lat, "lng": lng, "ts": datetime.now(timezone.utc).isoformat()}
     # Réaffectation (et non mutation) pour que SQLAlchemy détecte le changement JSONB.
     livraison.gps_traces = list(livraison.gps_traces or []) + [trace]
+    db.commit()
+    db.refresh(livraison)
+    return livraison
+
+
+def noter_transporteur(
+    db: Session, commande_id: uuid.UUID, user: User, note: int
+) -> Livraison:
+    """L'acheteur note le transporteur après livraison (1 à 5). Met à jour la
+    note moyenne du transporteur."""
+    if note < 1 or note > 5:
+        raise LivraisonError("La note doit être comprise entre 1 et 5", 422)
+    commande = db.get(Commande, commande_id)
+    if commande is None:
+        raise LivraisonError("Commande introuvable", 404)
+    if user.role not in (Role.OPS, Role.ADMIN) and commande.acheteur_id != user.id:
+        raise LivraisonError("Seul l'acheteur peut noter le transporteur", 403)
+
+    livraison = get_livraison(db, commande_id)
+    if livraison is None or livraison.statut != LivraisonStatut.LIVREE:
+        raise LivraisonError("La livraison n'est pas encore effectuée", 409)
+
+    livraison.note_transporteur = note
+    db.flush()
+
+    # Recalcule la note moyenne du transporteur.
+    moyenne = db.scalar(
+        select(func.avg(Livraison.note_transporteur)).where(
+            Livraison.transporteur_id == livraison.transporteur_id,
+            Livraison.note_transporteur.isnot(None),
+        )
+    )
+    transporteur = db.get(Transporteur, livraison.transporteur_id)
+    if transporteur is not None and moyenne is not None:
+        transporteur.note = round(float(moyenne), 2)
+
+    audit_service.journaliser(
+        db,
+        acteur_id=user.id,
+        action="TRANSPORTEUR_NOTE",
+        ressource_type="livraison",
+        ressource_id=livraison.id,
+        details={"note": note},
+    )
     db.commit()
     db.refresh(livraison)
     return livraison

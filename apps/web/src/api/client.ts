@@ -243,6 +243,7 @@ export interface Livraison {
   assurance_ref: string | null;
   gps_traces: { lat: number; lng: number; ts: string }[];
   livree_at: string | null;
+  note_transporteur: number | null;
 }
 
 export interface AssignationResponse {
@@ -304,6 +305,13 @@ export const logistique = {
     request<Livraison>(
       `/commandes/${commandeId}/position`,
       { method: "POST", body: JSON.stringify({ lat, lng }) },
+      token
+    ),
+
+  noterTransporteur: (token: string, commandeId: string, note: number) =>
+    request<Livraison>(
+      `/commandes/${commandeId}/noter-transporteur`,
+      { method: "POST", body: JSON.stringify({ note }) },
       token
     ),
 
