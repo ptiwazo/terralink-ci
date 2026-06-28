@@ -301,6 +301,9 @@ export const logistique = {
 
   mesCourses: (token: string) => request<Course[]>("/transporteurs/mes-courses", {}, token),
 
+  getLivraison: (token: string, commandeId: string) =>
+    request<Livraison>(`/commandes/${commandeId}/livraison`, {}, token),
+
   ajouterPosition: (token: string, commandeId: string, lat: number, lng: number) =>
     request<Livraison>(
       `/commandes/${commandeId}/position`,

@@ -139,6 +139,24 @@ def test_confirmation_bon_code_libere(client, produit_id, db_session):
 
 # --- Traçabilité GPS ---
 
+def test_acheteur_suit_la_livraison(client, produit_id, db_session):
+    prod, ach, cmd = _commande_payee(client, produit_id)
+    cid = cmd["id"]
+    transp = creer_transporteur_valide(client, db_session)
+    assigner_transporteur(client, prod["headers"], cid, transp["transporteur_id"])
+    _expedier(client, prod["headers"], cid)
+    client.post(f"/api/v1/commandes/{cid}/position", headers=transp["headers"], json={"lat": 5.36, "lng": -4.03})
+
+    # L'acheteur (partie prenante) voit la position du véhicule.
+    r = client.get(f"/api/v1/commandes/{cid}/livraison", headers=ach["headers"])
+    assert r.status_code == 200
+    assert len(r.json()["gps_traces"]) == 1
+
+    # Un tiers ne voit rien.
+    autre = creer_utilisateur(client, "ACHETEUR")
+    assert client.get(f"/api/v1/commandes/{cid}/livraison", headers=autre["headers"]).status_code == 403
+
+
 def test_mes_courses_transporteur(client, produit_id, db_session):
     prod, ach, cmd = _commande_payee(client, produit_id)
     cid = cmd["id"]

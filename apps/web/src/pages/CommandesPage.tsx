@@ -6,10 +6,12 @@ import {
   logistique,
   tresorerie,
   type Commande,
+  type Livraison,
   type Transporteur,
 } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
+import MapTrace from "../components/MapTrace";
 import {
   STATUT_COULEUR,
   STATUT_LABELS,
@@ -26,6 +28,8 @@ export default function CommandesPage() {
   const [codeRevele, setCodeRevele] = useState<Record<string, string>>({});
   const [codeSaisi, setCodeSaisi] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState<Record<string, number>>({});
+  const [suiviOuvert, setSuiviOuvert] = useState<Record<string, boolean>>({});
+  const [livraisons, setLivraisons] = useState<Record<string, Livraison | null>>({});
 
   const role = user?.role;
   const estProducteur = role === "PRODUCTEUR";
@@ -139,6 +143,36 @@ export default function CommandesPage() {
     }
   }
 
+  // --- Suivi de la livraison sur carte (acheteur/producteur) ---
+  const SUIVABLES = ["EN_LIVRAISON", "LIVREE_CONFORME", "FONDS_LIBERES", "CLOTUREE", "RESOLUE_LIBEREE"];
+
+  async function chargerLivraison(cid: string) {
+    if (!token) return;
+    try {
+      const liv = await logistique.getLivraison(token, cid);
+      setLivraisons((l) => ({ ...l, [cid]: liv }));
+    } catch {
+      setLivraisons((l) => ({ ...l, [cid]: null }));
+    }
+  }
+
+  function toggleSuivi(cid: string) {
+    setSuiviOuvert((s) => {
+      const open = !s[cid];
+      if (open) chargerLivraison(cid);
+      return { ...s, [cid]: open };
+    });
+  }
+
+  // Rafraîchit les livraisons suivies toutes les 15 s (suivi quasi temps réel).
+  useEffect(() => {
+    const ouverts = Object.keys(suiviOuvert).filter((c) => suiviOuvert[c]);
+    if (ouverts.length === 0 || !token) return;
+    const id = setInterval(() => ouverts.forEach((c) => chargerLivraison(c)), 15000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suiviOuvert, token]);
+
   return (
     <Layout>
       <h1 className="mb-4 text-xl font-bold">Mes commandes</h1>
@@ -239,6 +273,36 @@ export default function CommandesPage() {
                     className="rounded-lg bg-terra-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-terra-800">
                     Libérer au producteur
                   </button>
+                </div>
+              )}
+
+              {/* Suivi de la livraison sur carte */}
+              {SUIVABLES.includes(c.statut) && (
+                <div className="mt-3">
+                  <button onClick={() => toggleSuivi(c.id)}
+                    className="text-sm font-medium text-terra-700 hover:underline">
+                    {suiviOuvert[c.id] ? "Masquer le suivi" : "📍 Suivre la livraison"}
+                  </button>
+                  {suiviOuvert[c.id] && (
+                    <div className="mt-2">
+                      {livraisons[c.id] === undefined ? (
+                        <p className="text-sm text-gray-400">Chargement…</p>
+                      ) : livraisons[c.id] && livraisons[c.id]!.gps_traces.length > 0 ? (
+                        <>
+                          <MapTrace traces={livraisons[c.id]!.gps_traces} />
+                          <p className="mt-1 text-xs text-gray-400">
+                            Dernière position :{" "}
+                            {new Date(
+                              livraisons[c.id]!.gps_traces[livraisons[c.id]!.gps_traces.length - 1].ts
+                            ).toLocaleString("fr-FR")}{" "}
+                            · actualisé toutes les 15 s
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-gray-500">Position non encore disponible.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
