@@ -17,6 +17,7 @@ from app.models.commande import Commande
 from app.models.enums import (
     CommandeStatut,
     LivraisonStatut,
+    ModePaiement,
     Role,
     TransporteurStatut,
 )
@@ -155,7 +156,7 @@ def confirmer_reception(
     if not verify_code(code, livraison.code_remise_hash):
         raise LivraisonError("Code de remise invalide", 403)
 
-    commande.statut = cible  # LIVREE_CONFORME (transitoire)
+    commande.statut = cible  # LIVREE_CONFORME
     livraison.statut = LivraisonStatut.LIVREE
     livraison.livree_at = datetime.now(timezone.utc)
     audit_service.journaliser(
@@ -166,17 +167,20 @@ def confirmer_reception(
         ressource_id=commande.id,
     )
 
-    # Livraison conforme ⇒ libération des fonds (même transaction).
-    escrow_service.liberer_fonds_sans_commit(db, commande, user)
-    commande.statut = CommandeStatut.FONDS_LIBERES
-    audit_service.journaliser(
-        db,
-        acteur_id=user.id,
-        action="COMMANDE_FONDS_LIBERES",
-        ressource_type="commande",
-        ressource_id=commande.id,
-        details={"de": "LIVREE_CONFORME", "vers": "FONDS_LIBERES"},
-    )
+    # COMPTANT : livraison conforme ⇒ libération des fonds séquestrés (même
+    # transaction). DIFFERE : le producteur a déjà été payé d'avance ; la
+    # commande reste LIVREE_CONFORME jusqu'au remboursement de la créance.
+    if commande.mode_paiement == ModePaiement.COMPTANT:
+        escrow_service.liberer_fonds_sans_commit(db, commande, user)
+        commande.statut = CommandeStatut.FONDS_LIBERES
+        audit_service.journaliser(
+            db,
+            acteur_id=user.id,
+            action="COMMANDE_FONDS_LIBERES",
+            ressource_type="commande",
+            ressource_id=commande.id,
+            details={"de": "LIVREE_CONFORME", "vers": "FONDS_LIBERES"},
+        )
     db.commit()
     db.refresh(commande)
     return commande

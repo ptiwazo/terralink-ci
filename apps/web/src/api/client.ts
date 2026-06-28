@@ -298,4 +298,69 @@ export const logistique = {
     ),
 };
 
+// --- Phase 4 : trésorerie / paiement différé ---
+
+export interface Eligibilite {
+  score: number;
+  plafond_credit: number;
+  plafond_suggere: number;
+  plafond_effectif: number;
+  encours: number;
+  disponible: number;
+}
+
+export interface AcheteurProfil {
+  id: string;
+  user_id: string;
+  type: string;
+  adresse: string | null;
+  plafond_credit: number;
+}
+
+export interface Avance {
+  id: string;
+  commande_id: string;
+  acheteur_id: string;
+  montant: number;
+  montant_avance: number;
+  commission: number;
+  decote: number;
+  echeance: string;
+  statut: "AVANCEE" | "REMBOURSEE" | "IMPAYEE" | "ANNULEE";
+}
+
+export const tresorerie = {
+  monProfil: (token: string) =>
+    request<AcheteurProfil>("/acheteurs/mon-profil", {}, token),
+
+  creerProfil: (token: string, data: { type: string; adresse?: string }) =>
+    request<AcheteurProfil>(
+      "/acheteurs/profil",
+      { method: "POST", body: JSON.stringify(data) },
+      token
+    ),
+
+  monEligibilite: (token: string) =>
+    request<Eligibilite>("/acheteurs/mon-eligibilite", {}, token),
+
+  getAvance: (token: string, commandeId: string) =>
+    request<Avance>(`/commandes/${commandeId}/avance`, {}, token),
+
+  rembourserCreance: (token: string, commandeId: string) =>
+    request<Avance>(
+      `/commandes/${commandeId}/rembourser-creance`,
+      { method: "POST" },
+      token
+    ),
+
+  impayes: (token: string) => request<Avance[]>("/tresorerie/impayes", {}, token),
+
+  marquerImpayes: (token: string) =>
+    request<{ impayes_marques: number }>(
+      "/tresorerie/marquer-impayes",
+      { method: "POST" },
+      token
+    ),
+};
+
 export { ApiError };

@@ -13,11 +13,13 @@ const LIENS_PAR_ROLE: Record<Role, Lien[]> = {
     { to: "/", label: "Accueil" },
     { to: "/commandes", label: "Commandes" },
     { to: "/transporteurs", label: "Transporteurs" },
+    { to: "/tresorerie", label: "Trésorerie" },
   ],
   OPS: [
     { to: "/", label: "Accueil" },
     { to: "/commandes", label: "Commandes" },
     { to: "/transporteurs", label: "Transporteurs" },
+    { to: "/tresorerie", label: "Trésorerie" },
   ],
   PRODUCTEUR: [
     { to: "/", label: "Accueil" },
@@ -28,6 +30,7 @@ const LIENS_PAR_ROLE: Record<Role, Lien[]> = {
     { to: "/", label: "Accueil" },
     { to: "/catalogue", label: "Catalogue" },
     { to: "/commandes", label: "Commandes" },
+    { to: "/acheteur", label: "Mon compte" },
   ],
   TRANSPORTEUR: [
     { to: "/", label: "Accueil" },

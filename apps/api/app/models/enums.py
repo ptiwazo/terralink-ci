@@ -41,6 +41,21 @@ class ModePaiement(str, enum.Enum):
     DIFFERE = "DIFFERE"
 
 
+class AcheteurType(str, enum.Enum):
+    HOTEL = "HOTEL"
+    RESTAURANT = "RESTAURANT"
+    SUPERMARCHE = "SUPERMARCHE"
+    USINE = "USINE"
+    AUTRE = "AUTRE"
+
+
+class AvanceStatut(str, enum.Enum):
+    AVANCEE = "AVANCEE"        # avance versée au producteur, créance ouverte
+    REMBOURSEE = "REMBOURSEE"  # créance soldée par l'acheteur
+    IMPAYEE = "IMPAYEE"        # échéance dépassée, non remboursée
+    ANNULEE = "ANNULEE"        # créance annulée (résolution de litige)
+
+
 class TransporteurStatut(str, enum.Enum):
     """Validation d'un transporteur par l'équipe OPS (caution vérifiée)."""
 

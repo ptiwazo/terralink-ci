@@ -17,13 +17,19 @@ from sqlalchemy.orm import Session
 from app.models.ledger import LedgerEntry
 
 # --- Plan de comptes ---
-COMPTE_ESCROW = "ESCROW"        # fonds séquestrés détenus par la plateforme
-COMPTE_COMMISSION = "COMMISSION"  # revenu de la plateforme
-COMPTE_EXTERNE = "EXTERNE"      # frontière avec le monde (Mobile Money / cash)
+COMPTE_ESCROW = "ESCROW"          # fonds séquestrés détenus par la plateforme
+COMPTE_COMMISSION = "COMMISSION"  # revenu de commission
+COMPTE_EXTERNE = "EXTERNE"        # frontière avec le monde (Mobile Money / cash)
+COMPTE_DECOTE = "DECOTE"          # revenu de financement (paiement différé)
+COMPTE_PERTES = "PERTES"          # pertes (créances annulées en litige)
 
 
 def compte_producteur(producteur_id: uuid.UUID) -> str:
     return f"PRODUCTEUR:{producteur_id}"
+
+
+def compte_creance(acheteur_id: uuid.UUID) -> str:
+    return f"CREANCE:{acheteur_id}"
 
 
 class LedgerError(Exception):

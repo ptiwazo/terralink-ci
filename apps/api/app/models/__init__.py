@@ -1,4 +1,6 @@
+from app.models.acheteur import Acheteur
 from app.models.audit import AuditLog
+from app.models.avance import AvanceTresorerie
 from app.models.base import Base
 from app.models.commande import Commande, LigneCommande
 from app.models.escrow import EscrowTransaction
@@ -21,4 +23,6 @@ __all__ = [
     "LedgerEntry",
     "Transporteur",
     "Livraison",
+    "Acheteur",
+    "AvanceTresorerie",
 ]

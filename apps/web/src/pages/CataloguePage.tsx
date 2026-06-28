@@ -12,6 +12,7 @@ export default function CataloguePage() {
   const [items, setItems] = useState<CatalogueItem[]>([]);
   const [produitId, setProduitId] = useState("");
   const [quantites, setQuantites] = useState<Record<string, string>>({});
+  const [mode, setMode] = useState<"COMPTANT" | "DIFFERE">("COMPTANT");
   const [erreur, setErreur] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
@@ -39,8 +40,8 @@ export default function CataloguePage() {
     setErreur(null);
     setInfo(null);
     try {
-      const cmd = await api.creerCommande(token, [{ offre_id: offreId, quantite: q }]);
-      setInfo(`Commande créée : ${formatFCFA(cmd.montant_total)}`);
+      const cmd = await api.creerCommande(token, [{ offre_id: offreId, quantite: q }], mode);
+      setInfo(`Commande créée (${mode === "DIFFERE" ? "différé" : "comptant"}) : ${formatFCFA(cmd.montant_total)}`);
       setTimeout(() => navigate("/commandes"), 800);
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : "Commande impossible");
@@ -67,6 +68,15 @@ export default function CataloguePage() {
         <button onClick={() => rechercher()} className="rounded-lg bg-terra-700 px-4 py-2 font-medium text-white hover:bg-terra-800">
           Rechercher
         </button>
+      </div>
+
+      <div className="mb-4 flex items-center gap-2 text-sm">
+        <span className="text-gray-500">Paiement :</span>
+        <select value={mode} onChange={(e) => setMode(e.target.value as "COMPTANT" | "DIFFERE")}
+          className="rounded-lg border border-gray-300 px-3 py-1.5">
+          <option value="COMPTANT">Comptant (séquestre)</option>
+          <option value="DIFFERE">Différé (crédit 30-60 j)</option>
+        </select>
       </div>
 
       {erreur && <div className="mb-4 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{erreur}</div>}

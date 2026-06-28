@@ -15,11 +15,17 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, lazyload
 
 from app.models.commande import Commande, LigneCommande
-from app.models.enums import CommandeStatut, OffreStatut, Role
+from app.models.enums import CommandeStatut, ModePaiement, OffreStatut, Role
 from app.models.offre import Offre
 from app.models.user import User
 from app.schemas.commande import CommandeCreate
-from app.services import audit_service, escrow_service, livraison_service
+from app.services import (
+    acheteur_service,
+    audit_service,
+    escrow_service,
+    livraison_service,
+    tresorerie_service,
+)
 from app.services.state_machine import TransitionError, verifier_et_cibler
 
 
@@ -114,6 +120,20 @@ def creer_commande(db: Session, acheteur: User, data: CommandeCreate) -> Command
         ressource_id=commande.id,
         details={"montant_total": montant_total, "nb_lignes": len(lignes)},
     )
+
+    # Paiement différé : vérifier l'éligibilité et verser l'avance au producteur
+    # dans la MÊME transaction (créance acheteur ouverte). La commande passe
+    # directement en AVANCE_VERSEE.
+    if data.mode_paiement == ModePaiement.DIFFERE:
+        elig = acheteur_service.eligibilite(db, acheteur.id)
+        if elig.disponible < montant_total:
+            raise CommandeError(
+                f"Crédit insuffisant pour le paiement différé "
+                f"(disponible {elig.disponible} FCFA, requis {montant_total})",
+                403,
+            )
+        tresorerie_service.octroyer_avance_sans_commit(db, commande, acheteur)
+
     db.commit()
     db.refresh(commande)
     return commande
@@ -214,10 +234,16 @@ def resoudre_litige(db: Session, commande_id: uuid.UUID, user: User, sens: str) 
     except TransitionError as exc:
         raise CommandeError(exc.message, exc.status_code)
 
-    if sens == "REMBOURSE":
-        escrow_service.rembourser_sans_commit(db, commande, user)
+    if commande.mode_paiement == ModePaiement.DIFFERE:
+        # Producteur déjà payé d'avance : on agit sur la créance acheteur.
+        if sens == "REMBOURSE":
+            tresorerie_service.annuler_creance_sans_commit(db, commande, user)
+        # LIBERE : la créance est maintenue (l'acheteur doit payer), aucun mouvement.
     else:
-        escrow_service.liberer_fonds_sans_commit(db, commande, user)
+        if sens == "REMBOURSE":
+            escrow_service.rembourser_sans_commit(db, commande, user)
+        else:
+            escrow_service.liberer_fonds_sans_commit(db, commande, user)
 
     commande.statut = cible
     audit_service.journaliser(

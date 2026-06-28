@@ -3,6 +3,7 @@ import {
   ApiError,
   api,
   logistique,
+  tresorerie,
   type Commande,
   type Transporteur,
 } from "../api/client";
@@ -89,6 +90,16 @@ export default function CommandesPage() {
   const peutPayer = role === "ACHETEUR" || role === "OPS" || role === "ADMIN";
   const estOps = role === "OPS" || role === "ADMIN";
 
+  // Créance différée encore à régler (acheteur/OPS).
+  const STATUTS_CREANCE = ["AVANCE_VERSEE", "EN_PREPARATION", "EN_LIVRAISON", "LIVREE_CONFORME"];
+  function peutRembourser(c: Commande) {
+    return (
+      c.mode_paiement === "DIFFERE" &&
+      STATUTS_CREANCE.includes(c.statut) &&
+      (role === "ACHETEUR" || estOps)
+    );
+  }
+
   return (
     <Layout>
       <h1 className="mb-4 text-xl font-bold">Mes commandes</h1>
@@ -164,6 +175,16 @@ export default function CommandesPage() {
                   <button onClick={() => confirmer(c.id)}
                     className="rounded-lg bg-terra-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-terra-800">
                     Confirmer réception
+                  </button>
+                </div>
+              )}
+
+              {/* Remboursement de créance (différé) */}
+              {peutRembourser(c) && (
+                <div className="mt-3">
+                  <button onClick={wrap(() => tresorerie.rembourserCreance(token!, c.id), "Remboursement impossible")}
+                    className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">
+                    Rembourser la créance
                   </button>
                 </div>
               )}

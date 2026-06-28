@@ -39,6 +39,15 @@ class Settings(BaseSettings):
     # Commission de la plateforme en points de base (500 = 5,00 %). Entier.
     commission_bps: int = 500
 
+    # --- Trésorerie / paiement différé (Phase 4) ---
+    # Décote de financement prélevée sur l'avance producteur (200 = 2,00 %).
+    decote_bps: int = 200
+    # Délai de remboursement de la créance acheteur (jours, 30–60).
+    echeance_jours: int = 45
+    # Scoring : crédit accordé par commande comptant livrée, et plafond max.
+    credit_unit_fcfa: int = 100000
+    credit_max_fcfa: int = 5000000
+
 
 @lru_cache
 def get_settings() -> Settings:

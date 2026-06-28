@@ -2,6 +2,7 @@
 from fastapi import APIRouter
 
 from app.api.v1.routes import (
+    acheteurs,
     auth,
     catalogue,
     commandes,
@@ -11,6 +12,7 @@ from app.api.v1.routes import (
     paiements,
     produits,
     transporteurs,
+    tresorerie,
     users,
 )
 
@@ -25,3 +27,5 @@ api_router.include_router(commandes.router)
 api_router.include_router(paiements.router)
 api_router.include_router(transporteurs.router)
 api_router.include_router(livraisons.router)
+api_router.include_router(acheteurs.router)
+api_router.include_router(tresorerie.router)

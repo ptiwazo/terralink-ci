@@ -3,16 +3,16 @@
 Place de marché B2B agricole pour la Côte d'Ivoire (escrow, trésorerie, logistique).
 Interface en français. Voir [CLAUDE.md](./CLAUDE.md) pour la spécification complète.
 
-> **État actuel : Phase 3 — Logistique sécurisée (pilote complet 0→3).**
-> Phase 0 : auth, rôles, contrôle d'accès. Phase 1 : catalogue, offres, commandes
-> (montant serveur + stock atomique), machine à états. Phase 2 : escrow (grand
-> livre append-only, séquestre via webhook signé, libération avec commission).
-> Phase 3 : **transporteurs** (profil + caution + validation OPS), **assignation +
-> code de remise haché** (révélé une fois, à remettre au transporteur),
-> **confirmation de réception uniquement avec le bon code**, traçabilité GPS,
-> réf. d'assurance, et **litige** qui **bloque la libération** (résolution OPS :
-> remboursement acheteur ou libération producteur). Les phases 4-5 (trésorerie,
-> facturation/premium) ne sont pas encore implémentées.
+> **État actuel : Phase 4 — Trésorerie / paiement différé.**
+> Phases 0-3 : auth, catalogue/commandes, escrow (grand livre append-only,
+> séquestre/webhook signé/libération), logistique (transporteurs, code de remise
+> haché, litige). Phase 4 : **paiement différé** — un acheteur **éligible**
+> (plafond de crédit ∪ **scoring** sur l'historique comptant) commande en différé ;
+> la plateforme **avance le producteur immédiatement** (montant − commission −
+> décote), ouvre une **créance** acheteur à 30–60 j, et suit les **impayés**.
+> Remboursement à échéance, annulation de créance en cas de litige (perte
+> comptabilisée). Toutes les écritures respectent l'invariant **solde global = 0**.
+> La phase 5 (facturation OHADA, premium, KPIs) n'est pas encore implémentée.
 
 ### Parcours Phase 1-2 (dans le navigateur)
 
@@ -28,9 +28,19 @@ Interface en français. Voir [CLAUDE.md](./CLAUDE.md) pour la spécification com
    **Signaler un litige** → la libération est bloquée. Un compte **OPS** résout
    (rembourser l'acheteur ou libérer le producteur).
 
+### Parcours Phase 4 — paiement différé
+
+1. Acheteur → **Catalogue** → choisir **Paiement : Différé (crédit 30-60 j)** →
+   **Commander**. La commande passe directement en *Avance versée* (le producteur
+   est payé immédiatement, une créance s'ouvre).
+2. Acheteur → **Mon compte** : voir plafond effectif, disponible, encours, score.
+3. Producteur livre normalement (assigner/expédier ; l'acheteur confirme par code).
+4. Acheteur → **Commandes** → **Rembourser la créance** (à échéance) → *Clôturée*.
+5. OPS → **Trésorerie** : **Marquer les échéances dépassées** → suivi des impayés.
+
 Comptes de démo (mot de passe `motdepasse123`) : producteur `+2250700000010`,
-acheteur `+2250700000020`, OPS `+2250700000099`, transporteur validé
-`+2250700000030`.
+acheteur `+2250700000020` (profil + plafond 1 000 000 FCFA), OPS `+2250700000099`,
+transporteur validé `+2250700000030`.
 
 ### Notes Escrow (Phase 2)
 
