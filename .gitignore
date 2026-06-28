@@ -27,5 +27,7 @@ Thumbs.db
 .idea/
 .vscode/
 
-# --- Docker volumes (si montés en local) ---
+# --- Données / binaires PostgreSQL locaux ---
 infra/pgdata/
+infra/pg/
+

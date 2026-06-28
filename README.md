@@ -39,6 +39,8 @@ TERRALINK/
 
 ## 1. Lancer la base de données
 
+### Option A — Docker (conforme docker-compose.yml)
+
 ```bash
 cd infra
 cp .env.example .env          # PowerShell : copy .env.example .env
@@ -47,6 +49,30 @@ docker compose up -d
 
 Postgres écoute sur `localhost:5432`. La base de test `terralink_test`
 est créée automatiquement au premier démarrage.
+
+### Option B — PostgreSQL portable, sans Docker (setup dev actuel)
+
+Cette machine n'a pas Docker : on utilise une instance PostgreSQL 16 portable
+(binaires Zonky, sans installation ni service). C'est le mode déjà en place.
+
+- Binaires dans `infra/pg/` (ignorés par git), cluster dans `infra/pgdata/`.
+- Démarrer / arrêter / état :
+
+```powershell
+cd infra
+.\db.ps1 start     # démarre Postgres sur le port 5432
+.\db.ps1 status
+.\db.ps1 stop
+```
+
+Le rôle `terralink` (mot de passe `terralink`) et les bases `terralink` +
+`terralink_test` ont déjà été créés. Pour repartir de zéro, supprimer
+`infra/pgdata/`, relancer `initdb`, puis recréer rôle + bases.
+
+> ⚠️ `initdb` échoue sur cette machine si la locale système (« fr-CI ») est
+> active, à cause de l'apostrophe de « Côte d'Ivoire ». Contournement appliqué :
+> basculer temporairement `HKCU:\Control Panel\International\LocaleName` sur
+> `en-US` le temps de l'`initdb`, puis restaurer `fr-CI`.
 
 ## 2. Backend (API)
 
