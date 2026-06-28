@@ -57,6 +57,12 @@ class Settings(BaseSettings):
     # Dossier de stockage des PDF de factures.
     factures_dir: str = "factures"
 
+    # --- Suivi de livraison (ETA / approche) ---
+    # Vitesse moyenne supposée pour l'estimation de l'heure d'arrivée (km/h).
+    vitesse_livraison_kmh: float = 40.0
+    # Distance (km) en deçà de laquelle on alerte « le véhicule approche ».
+    seuil_approche_km: float = 2.0
+
 
 @lru_cache
 def get_settings() -> Settings:

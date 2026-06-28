@@ -18,6 +18,7 @@ from app.schemas.livraison import (
     NotationRequest,
     PositionRequest,
     ResolutionRequest,
+    SuiviPublic,
 )
 from app.services import commande_service, livraison_service
 from app.services.commande_service import CommandeError
@@ -56,6 +57,22 @@ def detail_livraison(
     if livraison is None:
         raise HTTPException(status_code=404, detail="Aucune livraison")
     return livraison
+
+
+@router.get("/{commande_id}/suivi", response_model=SuiviPublic)
+def suivi(
+    commande_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    try:
+        commande_service.obtenir_commande(db, commande_id, user)  # contrôle d'accès
+    except CommandeError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message)
+    try:
+        return livraison_service.suivi(db, commande_id)
+    except LivraisonError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message)
 
 
 @router.post("/{commande_id}/position", response_model=LivraisonPublic)

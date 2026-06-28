@@ -9,6 +9,14 @@ from app.models.enums import AcheteurType
 class AcheteurCreate(BaseModel):
     type: AcheteurType
     adresse: str | None = Field(default=None, max_length=255)
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
+
+
+class AcheteurUpdate(BaseModel):
+    adresse: str | None = Field(default=None, max_length=255)
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
 
 
 class AcheteurPublic(BaseModel):
@@ -18,6 +26,8 @@ class AcheteurPublic(BaseModel):
     user_id: uuid.UUID
     type: AcheteurType
     adresse: str | None
+    lat: float | None
+    lng: float | None
     plafond_credit: int
 
 

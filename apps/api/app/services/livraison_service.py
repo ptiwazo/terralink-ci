@@ -6,13 +6,16 @@ qu'une seule fois (à remettre au transporteur). La confirmation de réception p
 l'acheteur n'aboutit QUE si le bon code est présenté — sinon la livraison ne peut
 être confirmée et les fonds restent séquestrés.
 """
+import math
 import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import generer_code_remise, hash_code, verify_code
+from app.models.acheteur import Acheteur
 from app.models.commande import Commande
 from app.models.enums import (
     CommandeStatut,
@@ -37,6 +40,57 @@ class LivraisonError(Exception):
 
 def get_livraison(db: Session, commande_id: uuid.UUID) -> Livraison | None:
     return db.scalar(select(Livraison).where(Livraison.commande_id == commande_id))
+
+
+def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    r = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlmb = math.radians(lng2 - lng1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dlmb / 2) ** 2
+    return r * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def suivi(db: Session, commande_id: uuid.UUID) -> dict:
+    """Suivi : positions GPS, destination (acheteur), distance et ETA estimés.
+
+    Distance par formule de Haversine entre la dernière position connue et le
+    point de livraison ; ETA = distance / vitesse moyenne. `proche` indique que
+    le véhicule est sous le seuil d'approche.
+    """
+    commande = db.get(Commande, commande_id)
+    if commande is None:
+        raise LivraisonError("Commande introuvable", 404)
+    livraison = get_livraison(db, commande_id)
+    if livraison is None:
+        raise LivraisonError("Aucune livraison pour cette commande", 404)
+
+    positions = list(livraison.gps_traces or [])
+    acheteur = db.scalar(select(Acheteur).where(Acheteur.user_id == commande.acheteur_id))
+    destination = None
+    if acheteur is not None and acheteur.lat is not None and acheteur.lng is not None:
+        destination = {"lat": acheteur.lat, "lng": acheteur.lng}
+
+    distance_km = None
+    eta_minutes = None
+    proche = False
+    if positions and destination:
+        last = positions[-1]
+        distance_km = round(
+            _haversine_km(last["lat"], last["lng"], destination["lat"], destination["lng"]), 2
+        )
+        vitesse = settings.vitesse_livraison_kmh or 40.0
+        eta_minutes = int(round((distance_km / vitesse) * 60)) if vitesse > 0 else None
+        proche = distance_km <= settings.seuil_approche_km
+
+    return {
+        "statut": livraison.statut.value,
+        "positions": positions,
+        "destination": destination,
+        "distance_km": distance_km,
+        "eta_minutes": eta_minutes,
+        "proche": proche,
+    }
 
 
 def mes_courses(db: Session, user: User) -> list[tuple[Livraison, Commande]]:

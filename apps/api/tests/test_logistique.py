@@ -157,6 +157,37 @@ def test_acheteur_suit_la_livraison(client, produit_id, db_session):
     assert client.get(f"/api/v1/commandes/{cid}/livraison", headers=autre["headers"]).status_code == 403
 
 
+def test_suivi_eta_et_approche(client, produit_id, db_session):
+    prod = creer_utilisateur(client, "PRODUCTEUR")
+    offre = creer_offre(client, prod["headers"], produit_id)
+    ach = creer_utilisateur(client, "ACHETEUR")
+    # Destination de livraison (Abidjan).
+    client.post("/api/v1/acheteurs/profil", headers=ach["headers"],
+                json={"type": "RESTAURANT", "lat": 5.35, "lng": -4.02})
+    cmd = client.post("/api/v1/commandes", headers=ach["headers"],
+                      json={"lignes": [{"offre_id": offre["id"], "quantite": 1}]}).json()
+    cid = cmd["id"]
+    payer_commande(client, ach["headers"], cid)
+    client.post(f"/api/v1/commandes/{cid}/transition", headers=prod["headers"], json={"action": "PREPARER"})
+    transp = creer_transporteur_valide(client, db_session)
+    assigner_transporteur(client, prod["headers"], cid, transp["transporteur_id"])
+    client.post(f"/api/v1/commandes/{cid}/transition", headers=prod["headers"], json={"action": "EXPEDIER"})
+
+    # Position éloignée.
+    client.post(f"/api/v1/commandes/{cid}/position", headers=transp["headers"], json={"lat": 5.55, "lng": -4.20})
+    s = client.get(f"/api/v1/commandes/{cid}/suivi", headers=ach["headers"]).json()
+    assert s["destination"] == {"lat": 5.35, "lng": -4.02}
+    assert s["distance_km"] > 5
+    assert s["eta_minutes"] is not None and s["eta_minutes"] > 0
+    assert s["proche"] is False
+
+    # Position quasi à destination -> approche.
+    client.post(f"/api/v1/commandes/{cid}/position", headers=transp["headers"], json={"lat": 5.351, "lng": -4.021})
+    s2 = client.get(f"/api/v1/commandes/{cid}/suivi", headers=ach["headers"]).json()
+    assert s2["proche"] is True
+    assert s2["distance_km"] < 2
+
+
 def test_mes_courses_transporteur(client, produit_id, db_session):
     prod, ach, cmd = _commande_payee(client, produit_id)
     cid = cmd["id"]

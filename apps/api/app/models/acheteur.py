@@ -6,6 +6,7 @@ from sqlalchemy import (
     BigInteger,
     DateTime,
     Enum as SAEnum,
+    Float,
     ForeignKey,
     String,
     func,
@@ -30,6 +31,9 @@ class Acheteur(Base):
         SAEnum(AcheteurType, native_enum=False, length=20), nullable=False
     )
     adresse: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Coordonnées du point de livraison (destination), pour le suivi/ETA.
+    lat: Mapped[float | None] = mapped_column(Float, nullable=True)
+    lng: Mapped[float | None] = mapped_column(Float, nullable=True)
     # Plafond accordé manuellement (OPS). Le plafond effectif combine ce montant
     # avec le scoring basé sur l'historique (cf. acheteur_service.eligibilite).
     plafond_credit: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)

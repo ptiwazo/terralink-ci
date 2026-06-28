@@ -304,6 +304,9 @@ export const logistique = {
   getLivraison: (token: string, commandeId: string) =>
     request<Livraison>(`/commandes/${commandeId}/livraison`, {}, token),
 
+  getSuivi: (token: string, commandeId: string) =>
+    request<Suivi>(`/commandes/${commandeId}/suivi`, {}, token),
+
   ajouterPosition: (token: string, commandeId: string, lat: number, lng: number) =>
     request<Livraison>(
       `/commandes/${commandeId}/position`,
@@ -342,7 +345,18 @@ export interface AcheteurProfil {
   user_id: string;
   type: string;
   adresse: string | null;
+  lat: number | null;
+  lng: number | null;
   plafond_credit: number;
+}
+
+export interface Suivi {
+  statut: string;
+  positions: { lat: number; lng: number; ts: string }[];
+  destination: { lat: number; lng: number } | null;
+  distance_km: number | null;
+  eta_minutes: number | null;
+  proche: boolean;
 }
 
 export interface Avance {
@@ -361,10 +375,23 @@ export const tresorerie = {
   monProfil: (token: string) =>
     request<AcheteurProfil>("/acheteurs/mon-profil", {}, token),
 
-  creerProfil: (token: string, data: { type: string; adresse?: string }) =>
+  creerProfil: (
+    token: string,
+    data: { type: string; adresse?: string; lat?: number; lng?: number }
+  ) =>
     request<AcheteurProfil>(
       "/acheteurs/profil",
       { method: "POST", body: JSON.stringify(data) },
+      token
+    ),
+
+  majProfil: (
+    token: string,
+    data: { adresse?: string; lat?: number; lng?: number }
+  ) =>
+    request<AcheteurProfil>(
+      "/acheteurs/mon-profil",
+      { method: "PATCH", body: JSON.stringify(data) },
       token
     ),
 

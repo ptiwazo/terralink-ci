@@ -10,6 +10,7 @@ from app.models.user import User
 from app.schemas.acheteur import (
     AcheteurCreate,
     AcheteurPublic,
+    AcheteurUpdate,
     EligibilitePublic,
     PlafondRequest,
 )
@@ -51,6 +52,18 @@ def mon_profil(
     if profil is None:
         raise HTTPException(status_code=404, detail="Aucun profil acheteur")
     return profil
+
+
+@router.patch("/mon-profil", response_model=AcheteurPublic)
+def maj_profil(
+    data: AcheteurUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles(Role.ACHETEUR)),
+):
+    try:
+        return acheteur_service.maj_profil(db, user, data)
+    except AcheteurError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message)
 
 
 @router.get("/mon-eligibilite", response_model=EligibilitePublic)

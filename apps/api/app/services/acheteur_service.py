@@ -16,7 +16,7 @@ from app.models.avance import AvanceTresorerie
 from app.models.commande import Commande
 from app.models.enums import AvanceStatut, CommandeStatut, ModePaiement
 from app.models.user import User
-from app.schemas.acheteur import AcheteurCreate
+from app.schemas.acheteur import AcheteurCreate, AcheteurUpdate
 from app.services import audit_service
 
 
@@ -40,7 +40,14 @@ class Eligibilite:
 def creer_profil(db: Session, user: User, data: AcheteurCreate) -> Acheteur:
     if db.scalar(select(Acheteur).where(Acheteur.user_id == user.id)) is not None:
         raise AcheteurError("Profil acheteur déjà existant", 409)
-    acheteur = Acheteur(user_id=user.id, type=data.type, adresse=data.adresse, plafond_credit=0)
+    acheteur = Acheteur(
+        user_id=user.id,
+        type=data.type,
+        adresse=data.adresse,
+        lat=data.lat,
+        lng=data.lng,
+        plafond_credit=0,
+    )
     db.add(acheteur)
     db.flush()
     audit_service.journaliser(
@@ -57,6 +64,18 @@ def creer_profil(db: Session, user: User, data: AcheteurCreate) -> Acheteur:
 
 def mon_profil(db: Session, user: User) -> Acheteur | None:
     return db.scalar(select(Acheteur).where(Acheteur.user_id == user.id))
+
+
+def maj_profil(db: Session, user: User, data: AcheteurUpdate) -> Acheteur:
+    acheteur = mon_profil(db, user)
+    if acheteur is None:
+        raise AcheteurError("Profil acheteur introuvable", 404)
+    champs = data.model_dump(exclude_unset=True)
+    for k, v in champs.items():
+        setattr(acheteur, k, v)
+    db.commit()
+    db.refresh(acheteur)
+    return acheteur
 
 
 def get_par_user(db: Session, user_id: uuid.UUID) -> Acheteur:

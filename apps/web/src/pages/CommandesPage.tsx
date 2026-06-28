@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ApiError,
   api,
@@ -6,7 +6,7 @@ import {
   logistique,
   tresorerie,
   type Commande,
-  type Livraison,
+  type Suivi,
   type Transporteur,
 } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -24,12 +24,14 @@ export default function CommandesPage() {
   const [commandes, setCommandes] = useState<Commande[]>([]);
   const [transporteurs, setTransporteurs] = useState<Transporteur[]>([]);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [choixTransporteur, setChoixTransporteur] = useState<Record<string, string>>({});
   const [codeRevele, setCodeRevele] = useState<Record<string, string>>({});
   const [codeSaisi, setCodeSaisi] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState<Record<string, number>>({});
   const [suiviOuvert, setSuiviOuvert] = useState<Record<string, boolean>>({});
-  const [livraisons, setLivraisons] = useState<Record<string, Livraison | null>>({});
+  const [suivis, setSuivis] = useState<Record<string, Suivi | null>>({});
+  const dejaProche = useRef<Set<string>>(new Set());
 
   const role = user?.role;
   const estProducteur = role === "PRODUCTEUR";
@@ -146,29 +148,42 @@ export default function CommandesPage() {
   // --- Suivi de la livraison sur carte (acheteur/producteur) ---
   const SUIVABLES = ["EN_LIVRAISON", "LIVREE_CONFORME", "FONDS_LIBERES", "CLOTUREE", "RESOLUE_LIBEREE"];
 
-  async function chargerLivraison(cid: string) {
+  async function chargerSuivi(cid: string) {
     if (!token) return;
     try {
-      const liv = await logistique.getLivraison(token, cid);
-      setLivraisons((l) => ({ ...l, [cid]: liv }));
+      const s = await logistique.getSuivi(token, cid);
+      setSuivis((m) => ({ ...m, [cid]: s }));
+      // Alerte à l'approche (une fois par course).
+      if (s.proche && !dejaProche.current.has(cid)) {
+        dejaProche.current.add(cid);
+        setInfo("🔔 Le véhicule approche de votre adresse de livraison !");
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification("TerraLink CI", { body: "Votre livraison approche !" });
+        }
+      }
     } catch {
-      setLivraisons((l) => ({ ...l, [cid]: null }));
+      setSuivis((m) => ({ ...m, [cid]: null }));
     }
   }
 
   function toggleSuivi(cid: string) {
     setSuiviOuvert((s) => {
       const open = !s[cid];
-      if (open) chargerLivraison(cid);
+      if (open) {
+        if ("Notification" in window && Notification.permission === "default") {
+          Notification.requestPermission().catch(() => {});
+        }
+        chargerSuivi(cid);
+      }
       return { ...s, [cid]: open };
     });
   }
 
-  // Rafraîchit les livraisons suivies toutes les 15 s (suivi quasi temps réel).
+  // Rafraîchit les suivis ouverts toutes les 15 s (suivi quasi temps réel).
   useEffect(() => {
     const ouverts = Object.keys(suiviOuvert).filter((c) => suiviOuvert[c]);
     if (ouverts.length === 0 || !token) return;
-    const id = setInterval(() => ouverts.forEach((c) => chargerLivraison(c)), 15000);
+    const id = setInterval(() => ouverts.forEach((c) => chargerSuivi(c)), 15000);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suiviOuvert, token]);
@@ -177,6 +192,7 @@ export default function CommandesPage() {
     <Layout>
       <h1 className="mb-4 text-xl font-bold">Mes commandes</h1>
       {erreur && <div className="mb-4 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{erreur}</div>}
+      {info && <div className="mb-4 rounded bg-green-50 px-3 py-2 text-sm text-green-700">{info}</div>}
 
       <div className="space-y-3">
         {commandes.length === 0 && <p className="text-sm text-gray-500">Aucune commande.</p>}
@@ -285,18 +301,33 @@ export default function CommandesPage() {
                   </button>
                   {suiviOuvert[c.id] && (
                     <div className="mt-2">
-                      {livraisons[c.id] === undefined ? (
+                      {suivis[c.id] === undefined ? (
                         <p className="text-sm text-gray-400">Chargement…</p>
-                      ) : livraisons[c.id] && livraisons[c.id]!.gps_traces.length > 0 ? (
+                      ) : suivis[c.id] && suivis[c.id]!.positions.length > 0 ? (
                         <>
-                          <MapTrace traces={livraisons[c.id]!.gps_traces} />
-                          <p className="mt-1 text-xs text-gray-400">
-                            Dernière position :{" "}
-                            {new Date(
-                              livraisons[c.id]!.gps_traces[livraisons[c.id]!.gps_traces.length - 1].ts
-                            ).toLocaleString("fr-FR")}{" "}
-                            · actualisé toutes les 15 s
-                          </p>
+                          {suivis[c.id]!.proche && (
+                            <div className="mb-2 rounded bg-amber-100 px-3 py-2 text-sm font-medium text-amber-800">
+                              🔔 Le véhicule approche !
+                            </div>
+                          )}
+                          <MapTrace
+                            traces={suivis[c.id]!.positions}
+                            destination={suivis[c.id]!.destination}
+                          />
+                          <div className="mt-1 flex flex-wrap gap-3 text-xs text-gray-500">
+                            {suivis[c.id]!.distance_km != null && (
+                              <span>Distance : <b>{suivis[c.id]!.distance_km} km</b></span>
+                            )}
+                            {suivis[c.id]!.eta_minutes != null && (
+                              <span>Arrivée estimée : <b>~{suivis[c.id]!.eta_minutes} min</b></span>
+                            )}
+                            {suivis[c.id]!.destination == null && (
+                              <span className="text-amber-600">
+                                Définissez votre adresse de livraison (Mon compte) pour la distance et l'ETA.
+                              </span>
+                            )}
+                            <span>· actualisé toutes les 15 s</span>
+                          </div>
                         </>
                       ) : (
                         <p className="text-sm text-gray-500">Position non encore disponible.</p>

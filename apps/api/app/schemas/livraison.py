@@ -57,3 +57,19 @@ class CoursePublic(BaseModel):
     commande_statut: str
     montant: int
     produits: str
+
+
+class Point(BaseModel):
+    lat: float
+    lng: float
+
+
+class SuiviPublic(BaseModel):
+    """Suivi temps réel : positions, destination, distance et ETA jusqu'à l'acheteur."""
+
+    statut: str
+    positions: list
+    destination: Point | None
+    distance_km: float | None
+    eta_minutes: int | None
+    proche: bool
