@@ -1,0 +1,40 @@
+"""Configuration centralisée, chargée depuis l'environnement / .env.
+
+Toutes les valeurs sensibles (secret JWT, URL de base) viennent de
+l'environnement — jamais codées en dur (cf. CLAUDE.md §6, §9).
+"""
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+
+    # Base de données
+    database_url: str = "postgresql+psycopg2://terralink:terralink@localhost:5432/terralink"
+    test_database_url: str = (
+        "postgresql+psycopg2://terralink:terralink@localhost:5432/terralink_test"
+    )
+
+    # JWT
+    jwt_secret: str = "dev-secret-a-changer-absolument-en-production"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 15
+    refresh_token_expire_days: int = 7
+
+    # CORS
+    frontend_origin: str = "http://localhost:5173"
+
+    # Environnement
+    environment: str = "dev"
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()
