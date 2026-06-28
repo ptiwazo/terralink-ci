@@ -1,0 +1,40 @@
+# Blueprint Render — API FastAPI + PostgreSQL managé.
+# Déploiement : créer un "Blueprint" sur render.com pointant vers ce dépôt.
+# Les secrets (JWT, webhook) sont générés automatiquement et persistés par Render.
+
+databases:
+  - name: terralink-db
+    databaseName: terralink
+    user: terralink
+    plan: free # 90 jours en gratuit ; passer à un plan payant pour la prod réelle
+
+services:
+  - type: web
+    name: terralink-api
+    runtime: python
+    rootDir: apps/api
+    plan: free # se met en veille après inactivité (cold start ~50 s)
+    region: frankfurt # le plus proche de la Côte d'Ivoire parmi les régions Render
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    # Migrations appliquées à chaque démarrage (idempotent) puis lancement de l'API.
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.10"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: terralink-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: WEBHOOK_SECRET
+        generateValue: true
+      - key: ENVIRONMENT
+        value: prod
+      - key: PAYMENT_PROVIDER
+        value: sandbox # remplacer par "mobile_money" une fois l'agrégateur branché
+      # URL du front Netlify (à ajuster avec ton vrai sous-domaine Netlify).
+      - key: FRONTEND_ORIGIN
+        value: https://terralink-ci.netlify.app

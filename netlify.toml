@@ -1,0 +1,22 @@
+# Configuration Netlify — front React/Vite.
+# Le proxy /api/* renvoie vers l'API Render : le navigateur reste en same-origin
+# (aucun CORS), et le front continue d'appeler /api/v1.
+
+[build]
+  base = "apps/web"
+  command = "npm run build"
+  publish = "dist"
+
+# IMPORTANT : remplacer l'URL ci-dessous par l'URL réelle de l'API Render
+# (ex. https://terralink-api.onrender.com) une fois l'API déployée.
+[[redirects]]
+  from = "/api/*"
+  to = "https://terralink-api.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+# Fallback SPA (react-router) — sert index.html pour toutes les autres routes.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

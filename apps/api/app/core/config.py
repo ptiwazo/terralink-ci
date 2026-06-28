@@ -5,7 +5,21 @@ l'environnement — jamais codées en dur (cf. CLAUDE.md §6, §9).
 """
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _normaliser_url_postgres(url: str) -> str:
+    """Force le driver psycopg2. Les hébergeurs (Render/Railway/Heroku) fournissent
+    une URL `postgres://` ou `postgresql://` que SQLAlchemy 2 n'accepte pas telle
+    quelle ; on insère le driver attendu."""
+    if url.startswith("postgresql+"):
+        return url
+    if url.startswith("postgresql://"):
+        return "postgresql+psycopg2://" + url[len("postgresql://"):]
+    if url.startswith("postgres://"):
+        return "postgresql+psycopg2://" + url[len("postgres://"):]
+    return url
 
 
 class Settings(BaseSettings):
@@ -62,6 +76,12 @@ class Settings(BaseSettings):
     vitesse_livraison_kmh: float = 40.0
     # Distance (km) en deçà de laquelle on alerte « le véhicule approche ».
     seuil_approche_km: float = 2.0
+
+    @model_validator(mode="after")
+    def _fixer_drivers_db(self):
+        self.database_url = _normaliser_url_postgres(self.database_url)
+        self.test_database_url = _normaliser_url_postgres(self.test_database_url)
+        return self
 
 
 @lru_cache
