@@ -1,0 +1,8 @@
+# Normalise les fins de ligne en LF pour tout le code source.
+* text=auto eol=lf
+
+# Fichiers binaires : pas de normalisation.
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
