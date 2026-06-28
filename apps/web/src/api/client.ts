@@ -71,6 +71,73 @@ export interface RegisterPayload {
   email?: string;
 }
 
+// --- Phase 1 : catalogue & commandes ---
+
+export interface Produit {
+  id: string;
+  nom: string;
+  categorie: string;
+  unite: string;
+}
+
+export interface Offre {
+  id: string;
+  producteur_id: string;
+  produit: Produit;
+  producteur: { id: string; nom: string };
+  quantite_disponible: number;
+  prix_unitaire: number;
+  qualite: string | null;
+  dispo_le: string;
+  lat: number | null;
+  lng: number | null;
+  statut: "DISPONIBLE" | "EPUISEE" | "RETIREE";
+  created_at: string;
+}
+
+export interface CatalogueItem {
+  offre: Offre;
+  distance_km: number | null;
+}
+
+export interface OffrePayload {
+  produit_id: string;
+  quantite_disponible: number;
+  prix_unitaire: number;
+  qualite?: string | null;
+  dispo_le: string;
+  lat?: number | null;
+  lng?: number | null;
+}
+
+export interface LigneCommande {
+  id: string;
+  offre_id: string;
+  produit: Produit;
+  quantite: number;
+  prix_unitaire: number;
+}
+
+export interface Commande {
+  id: string;
+  acheteur_id: string;
+  producteur_id: string;
+  statut: string;
+  montant_total: number;
+  mode_paiement: "COMPTANT" | "DIFFERE";
+  lignes: LigneCommande[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CatalogueQuery {
+  produit_id?: string;
+  dispo_avant?: string;
+  lat?: number;
+  lng?: number;
+  rayon_km?: number;
+}
+
 export const api = {
   register: (data: RegisterPayload) =>
     request<AuthResponse>("/auth/register", {
@@ -93,6 +160,49 @@ export const api = {
       sections: string[];
       message: string;
     }>("/dashboard", {}, token),
+
+  // --- Produits ---
+  produits: (token: string) => request<Produit[]>("/produits", {}, token),
+
+  // --- Offres (producteur) ---
+  mesOffres: (token: string) => request<Offre[]>("/offres/mes", {}, token),
+
+  creerOffre: (token: string, data: OffrePayload) =>
+    request<Offre>("/offres", { method: "POST", body: JSON.stringify(data) }, token),
+
+  retirerOffre: (token: string, id: string) =>
+    request<Offre>(`/offres/${id}`, { method: "DELETE" }, token),
+
+  // --- Catalogue (acheteur) ---
+  catalogue: (token: string, q: CatalogueQuery = {}) => {
+    const params = new URLSearchParams();
+    Object.entries(q).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
+    });
+    const qs = params.toString();
+    return request<CatalogueItem[]>(`/catalogue${qs ? `?${qs}` : ""}`, {}, token);
+  },
+
+  // --- Commandes ---
+  creerCommande: (
+    token: string,
+    lignes: { offre_id: string; quantite: number }[],
+    mode_paiement: "COMPTANT" | "DIFFERE" = "COMPTANT"
+  ) =>
+    request<Commande>(
+      "/commandes",
+      { method: "POST", body: JSON.stringify({ lignes, mode_paiement }) },
+      token
+    ),
+
+  mesCommandes: (token: string) => request<Commande[]>("/commandes/mes", {}, token),
+
+  transitionCommande: (token: string, id: string, action: string) =>
+    request<Commande>(
+      `/commandes/${id}/transition`,
+      { method: "POST", body: JSON.stringify({ action }) },
+      token
+    ),
 };
 
 export { ApiError };

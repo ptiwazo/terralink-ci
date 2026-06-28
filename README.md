@@ -3,9 +3,24 @@
 Place de marché B2B agricole pour la Côte d'Ivoire (escrow, trésorerie, logistique).
 Interface en français. Voir [CLAUDE.md](./CLAUDE.md) pour la spécification complète.
 
-> **État actuel : Phase 0 — Fondations.** Auth (inscription/connexion par téléphone),
-> rôles, contrôle d'accès serveur, tableau de bord par rôle (vide). Les phases
-> suivantes (catalogue, escrow, logistique…) ne sont pas encore implémentées.
+> **État actuel : Phase 1 — Catalogue & commandes (sans argent).**
+> Phase 0 : auth téléphone, rôles, contrôle d'accès serveur, tableau de bord.
+> Phase 1 : catalogue de référence, offres géolocalisées (CRUD producteur),
+> recherche acheteur (produit/proximité/délai), commandes avec montant calculé
+> serveur + décrément de stock atomique, et **machine à états** explicite
+> jusqu'à `LIVREE_CONFORME` (paiement *simulé*, sans mouvement de fonds).
+> Les phases suivantes (escrow réel, logistique, trésorerie) ne sont pas encore
+> implémentées.
+
+### Parcours Phase 1 (dans le navigateur)
+
+1. Créer un compte **Producteur** → onglet **Mes offres** → publier une offre
+   (produit, quantité, prix FCFA, géoloc).
+2. Créer un compte **Acheteur** → onglet **Catalogue** → rechercher, saisir une
+   quantité, **Commander**.
+3. Suivre dans **Commandes** : l'acheteur « Paie (simulation) », le producteur
+   « Prépare » puis « Expédie », l'acheteur « Confirme réception ».
+   Chaque action n'est permise qu'au bon rôle (vérifié côté serveur).
 
 ## Stack figée
 

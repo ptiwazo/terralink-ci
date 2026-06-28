@@ -16,3 +16,47 @@ class Role(str, enum.Enum):
 class UserStatus(str, enum.Enum):
     ACTIF = "ACTIF"
     SUSPENDU = "SUSPENDU"
+
+
+class Unite(str, enum.Enum):
+    """Unités de vente des produits agricoles."""
+
+    KG = "KG"
+    TONNE = "TONNE"
+    SAC = "SAC"
+    REGIME = "REGIME"  # ex: régime de banane plantain
+    CASIER = "CASIER"
+    UNITE = "UNITE"
+    LITRE = "LITRE"
+
+
+class OffreStatut(str, enum.Enum):
+    DISPONIBLE = "DISPONIBLE"
+    EPUISEE = "EPUISEE"
+    RETIREE = "RETIREE"
+
+
+class ModePaiement(str, enum.Enum):
+    COMPTANT = "COMPTANT"
+    DIFFERE = "DIFFERE"
+
+
+class CommandeStatut(str, enum.Enum):
+    """Statuts de la machine à états des commandes (CLAUDE.md §5).
+
+    Phase 1 implémente le parcours jusqu'à LIVREE_CONFORME, sans argent réel
+    (le passage par PAYEE_SEQUESTRE est *simulé*). Les statuts liés aux fonds
+    (FONDS_LIBERES, CLOTUREE) et au litige arrivent en Phases 2-3.
+    """
+
+    CREEE = "CREEE"
+    PAYEE_SEQUESTRE = "PAYEE_SEQUESTRE"
+    AVANCE_VERSEE = "AVANCE_VERSEE"
+    EN_PREPARATION = "EN_PREPARATION"
+    EN_LIVRAISON = "EN_LIVRAISON"
+    LIVREE_CONFORME = "LIVREE_CONFORME"
+    LITIGE = "LITIGE"
+    FONDS_LIBERES = "FONDS_LIBERES"
+    CLOTUREE = "CLOTUREE"
+    RESOLUE_REMBOURSEE = "RESOLUE_REMBOURSEE"
+    RESOLUE_LIBEREE = "RESOLUE_LIBEREE"

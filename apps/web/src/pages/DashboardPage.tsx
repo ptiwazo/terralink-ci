@@ -1,8 +1,17 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { ROLE_LABELS } from "../auth/roles";
 import Layout from "../components/Layout";
+
+// Sections du tableau de bord qui mènent à une page implémentée (Phase 1).
+const SECTION_LIENS: Record<string, string> = {
+  "Mes offres": "/offres",
+  Catalogue: "/catalogue",
+  "Mes commandes": "/commandes",
+  Commandes: "/commandes",
+};
 
 interface Dashboard {
   role: string;
@@ -48,15 +57,28 @@ export default function DashboardPage() {
       )}
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {(data?.sections ?? []).map((section) => (
-          <div
-            key={section}
-            className="flex min-h-20 items-center justify-center rounded-xl border border-dashed border-gray-300 bg-white p-4 text-center text-sm font-medium text-gray-600"
-          >
-            {section}
-            <span className="ml-1 text-xs text-gray-300">(bientôt)</span>
-          </div>
-        ))}
+        {(data?.sections ?? []).map((section) => {
+          const lien = SECTION_LIENS[section];
+          const classe =
+            "flex min-h-20 items-center justify-center rounded-xl border bg-white p-4 text-center text-sm font-medium";
+          return lien ? (
+            <Link
+              key={section}
+              to={lien}
+              className={`${classe} border-terra-600 text-terra-800 hover:bg-terra-700/5`}
+            >
+              {section}
+            </Link>
+          ) : (
+            <div
+              key={section}
+              className={`${classe} border-dashed border-gray-300 text-gray-600`}
+            >
+              {section}
+              <span className="ml-1 text-xs text-gray-300">(bientôt)</span>
+            </div>
+          );
+        })}
       </div>
     </Layout>
   );
