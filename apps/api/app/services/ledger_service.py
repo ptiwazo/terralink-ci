@@ -22,6 +22,7 @@ COMPTE_COMMISSION = "COMMISSION"  # revenu de commission
 COMPTE_EXTERNE = "EXTERNE"        # frontière avec le monde (Mobile Money / cash)
 COMPTE_DECOTE = "DECOTE"          # revenu de financement (paiement différé)
 COMPTE_PERTES = "PERTES"          # pertes (créances annulées en litige)
+COMPTE_ABONNEMENT = "ABONNEMENT"  # revenu des abonnements premium
 
 
 def compte_producteur(producteur_id: uuid.UUID) -> str:

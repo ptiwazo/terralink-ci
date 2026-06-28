@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   ApiError,
   api,
+  facturation,
   logistique,
   tresorerie,
   type Commande,
@@ -98,6 +99,30 @@ export default function CommandesPage() {
       STATUTS_CREANCE.includes(c.statut) &&
       (role === "ACHETEUR" || estOps)
     );
+  }
+
+  const FACTURABLES = ["FONDS_LIBERES", "CLOTUREE", "RESOLUE_LIBEREE"];
+
+  async function emettreFacture(cid: string) {
+    if (!token) return;
+    setErreur(null);
+    try {
+      const f = await facturation.emettre(token, cid);
+      await facturation.telechargerPdf(token, cid, f.numero);
+    } catch (err) {
+      setErreur(err instanceof ApiError ? err.message : "Émission impossible");
+    }
+  }
+
+  async function telechargerFacture(cid: string) {
+    if (!token) return;
+    setErreur(null);
+    try {
+      const f = await facturation.getFacture(token, cid);
+      await facturation.telechargerPdf(token, cid, f.numero);
+    } catch (err) {
+      setErreur(err instanceof ApiError ? err.message : "Facture non disponible");
+    }
   }
 
   return (
@@ -199,6 +224,22 @@ export default function CommandesPage() {
                   <button onClick={wrap(() => logistique.resoudre(token!, c.id, "LIBERE"), "Échec")}
                     className="rounded-lg bg-terra-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-terra-800">
                     Libérer au producteur
+                  </button>
+                </div>
+              )}
+
+              {/* Facturation (émission OPS, téléchargement parties) */}
+              {FACTURABLES.includes(c.statut) && (
+                <div className="mt-3 flex gap-2">
+                  {estOps && (
+                    <button onClick={() => emettreFacture(c.id)}
+                      className="rounded-lg bg-gray-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800">
+                      Émettre la facture
+                    </button>
+                  )}
+                  <button onClick={() => telechargerFacture(c.id)}
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Télécharger la facture
                   </button>
                 </div>
               )}

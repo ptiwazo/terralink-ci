@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import {
   ApiError,
+  premiumApi,
   tresorerie,
   type AcheteurProfil,
+  type Abonnement,
   type Eligibilite,
 } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -15,6 +17,7 @@ export default function AcheteurPage() {
   const { token } = useAuth();
   const [profil, setProfil] = useState<AcheteurProfil | null>(null);
   const [elig, setElig] = useState<Eligibilite | null>(null);
+  const [abo, setAbo] = useState<Abonnement | null>(null);
   const [charge, setCharge] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [form, setForm] = useState({ type: "RESTAURANT", adresse: "" });
@@ -32,8 +35,21 @@ export default function AcheteurPage() {
       .catch(() => setProfil(null))
       .finally(() => setCharge(true));
     recharger().catch(() => {});
+    premiumApi.monAbonnement(token).then(setAbo).catch(() => setAbo(null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  async function souscrire() {
+    if (!token) return;
+    setErreur(null);
+    try {
+      setAbo(await premiumApi.souscrire(token, "PREMIUM"));
+    } catch (err) {
+      setErreur(err instanceof ApiError ? err.message : "Souscription impossible");
+    }
+  }
+
+  const premiumActif = abo?.statut === "ACTIF" && new Date(abo.fin) > new Date();
 
   async function creer(e: React.FormEvent) {
     e.preventDefault();
@@ -67,6 +83,22 @@ export default function AcheteurPage() {
           </p>
         </div>
       )}
+
+      <div className="mb-4 rounded-xl bg-white p-5 shadow">
+        <h2 className="mb-2 font-semibold">Abonnement premium</h2>
+        {premiumActif ? (
+          <p className="text-sm text-green-700">
+            Premium actif jusqu'au {new Date(abo!.fin).toLocaleDateString("fr-FR")}.
+          </p>
+        ) : (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500">25 000 FCFA / mois — accès prioritaire.</p>
+            <button onClick={souscrire} className="rounded-lg bg-terra-700 px-4 py-2 text-sm font-medium text-white hover:bg-terra-800">
+              Souscrire
+            </button>
+          </div>
+        )}
+      </div>
 
       {charge && profil ? (
         <div className="rounded-xl bg-white p-5 shadow">

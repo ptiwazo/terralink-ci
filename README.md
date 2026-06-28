@@ -3,16 +3,15 @@
 Place de marché B2B agricole pour la Côte d'Ivoire (escrow, trésorerie, logistique).
 Interface en français. Voir [CLAUDE.md](./CLAUDE.md) pour la spécification complète.
 
-> **État actuel : Phase 4 — Trésorerie / paiement différé.**
-> Phases 0-3 : auth, catalogue/commandes, escrow (grand livre append-only,
+> **État actuel : spécification complète (Phases 0 à 5).**
+> Phases 0-4 : auth, catalogue/commandes, escrow (grand livre append-only,
 > séquestre/webhook signé/libération), logistique (transporteurs, code de remise
-> haché, litige). Phase 4 : **paiement différé** — un acheteur **éligible**
-> (plafond de crédit ∪ **scoring** sur l'historique comptant) commande en différé ;
-> la plateforme **avance le producteur immédiatement** (montant − commission −
-> décote), ouvre une **créance** acheteur à 30–60 j, et suit les **impayés**.
-> Remboursement à échéance, annulation de créance en cas de litige (perte
-> comptabilisée). Toutes les écritures respectent l'invariant **solde global = 0**.
-> La phase 5 (facturation OHADA, premium, KPIs) n'est pas encore implémentée.
+> haché, litige), trésorerie (paiement différé, créances, impayés).
+> Phase 5 : **facturation OHADA** (numérotation séquentielle continue **sans trou
+> par exercice**, PDF), **abonnements premium**, **prévisions de récolte**
+> (agrégation des offres à venir), et **tableau de bord KPIs** (GMV, commandes,
+> rétention, sinistralité, impayés, revenus). Toutes les écritures financières
+> respectent l'invariant **solde global = 0**.
 
 ### Parcours Phase 1-2 (dans le navigateur)
 
@@ -37,6 +36,15 @@ Interface en français. Voir [CLAUDE.md](./CLAUDE.md) pour la spécification com
 3. Producteur livre normalement (assigner/expédier ; l'acheteur confirme par code).
 4. Acheteur → **Commandes** → **Rembourser la créance** (à échéance) → *Clôturée*.
 5. OPS → **Trésorerie** : **Marquer les échéances dépassées** → suivi des impayés.
+
+### Parcours Phase 5 — facturation, premium, pilotage
+
+1. OPS → **Commandes** : sur une commande livrée (*Fonds libérés* / *Clôturée*),
+   **Émettre la facture** (numéro OHADA séquentiel) → le PDF se télécharge.
+   Les parties peuvent **Télécharger la facture**.
+2. Acheteur → **Mon compte** → **Souscrire** au premium (25 000 FCFA / mois).
+3. Producteur → **Prévisions** : volumes à venir agrégés par produit.
+4. OPS → **KPIs** : GMV, commandes, rétention, sinistralité, impayés, revenus.
 
 Comptes de démo (mot de passe `motdepasse123`) : producteur `+2250700000010`,
 acheteur `+2250700000020` (profil + plafond 1 000 000 FCFA), OPS `+2250700000099`,

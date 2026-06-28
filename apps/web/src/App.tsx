@@ -7,6 +7,8 @@ import LoginPage from "./pages/LoginPage";
 import OffresPage from "./pages/OffresPage";
 import RegisterPage from "./pages/RegisterPage";
 import AcheteurPage from "./pages/AcheteurPage";
+import KpisPage from "./pages/KpisPage";
+import PrevisionsPage from "./pages/PrevisionsPage";
 import TransporteurPage from "./pages/TransporteurPage";
 import TransporteursAdminPage from "./pages/TransporteursAdminPage";
 import TresoreriePage from "./pages/TresoreriePage";
@@ -28,6 +30,8 @@ export default function App() {
       <Route path="/transporteurs" element={<Protege><TransporteursAdminPage /></Protege>} />
       <Route path="/acheteur" element={<Protege><AcheteurPage /></Protege>} />
       <Route path="/tresorerie" element={<Protege><TresoreriePage /></Protege>} />
+      <Route path="/kpis" element={<Protege><KpisPage /></Protege>} />
+      <Route path="/previsions" element={<Protege><PrevisionsPage /></Protege>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

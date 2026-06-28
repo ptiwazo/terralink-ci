@@ -363,4 +363,88 @@ export const tresorerie = {
     ),
 };
 
+// --- Phase 5 : facturation, premium, analytics ---
+
+export interface Facture {
+  id: string;
+  numero: string;
+  exercice: number;
+  sequence: number;
+  commande_id: string;
+  montant_ht: number;
+  tva: number;
+  montant_ttc: number;
+  pdf_ref: string | null;
+  created_at: string;
+}
+
+export interface Abonnement {
+  id: string;
+  formule: string;
+  debut: string;
+  fin: string;
+  prix: number;
+  statut: string;
+}
+
+export interface Prevision {
+  produit: string;
+  unite: string;
+  quantite_totale: number;
+  nb_offres: number;
+}
+
+export interface Kpis {
+  gmv: number;
+  nb_commandes: number;
+  par_statut: Record<string, number>;
+  nb_litiges: number;
+  sinistralite: number;
+  impayes_nb: number;
+  impayes_montant: number;
+  nb_acheteurs: number;
+  retention: number;
+  revenus: { commission: number; decote: number; abonnement: number; pertes: number };
+}
+
+const BASE2 = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
+
+export const facturation = {
+  emettre: (token: string, commandeId: string) =>
+    request<Facture>(`/commandes/${commandeId}/facture`, { method: "POST" }, token),
+
+  getFacture: (token: string, commandeId: string) =>
+    request<Facture>(`/commandes/${commandeId}/facture`, {}, token),
+
+  lister: (token: string) => request<Facture[]>("/factures", {}, token),
+
+  // Télécharge le PDF (avec authentification) et déclenche l'enregistrement.
+  telechargerPdf: async (token: string, commandeId: string, numero: string) => {
+    const res = await fetch(`${BASE2}/factures/${commandeId}/pdf`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new ApiError(res.status, "PDF indisponible");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${numero}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+};
+
+export const premiumApi = {
+  souscrire: (token: string, formule = "PREMIUM") =>
+    request<Abonnement>("/premium/souscrire", { method: "POST", body: JSON.stringify({ formule }) }, token),
+
+  monAbonnement: (token: string) =>
+    request<Abonnement | null>("/premium/mon-abonnement", {}, token),
+};
+
+export const analytics = {
+  previsions: (token: string) => request<Prevision[]>("/previsions", {}, token),
+  kpis: (token: string) => request<Kpis>("/kpis", {}, token),
+};
+
 export { ApiError };

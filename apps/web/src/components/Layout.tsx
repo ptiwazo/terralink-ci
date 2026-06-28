@@ -14,17 +14,20 @@ const LIENS_PAR_ROLE: Record<Role, Lien[]> = {
     { to: "/commandes", label: "Commandes" },
     { to: "/transporteurs", label: "Transporteurs" },
     { to: "/tresorerie", label: "Trésorerie" },
+    { to: "/kpis", label: "KPIs" },
   ],
   OPS: [
     { to: "/", label: "Accueil" },
     { to: "/commandes", label: "Commandes" },
     { to: "/transporteurs", label: "Transporteurs" },
     { to: "/tresorerie", label: "Trésorerie" },
+    { to: "/kpis", label: "KPIs" },
   ],
   PRODUCTEUR: [
     { to: "/", label: "Accueil" },
     { to: "/offres", label: "Mes offres" },
     { to: "/commandes", label: "Commandes" },
+    { to: "/previsions", label: "Prévisions" },
   ],
   ACHETEUR: [
     { to: "/", label: "Accueil" },

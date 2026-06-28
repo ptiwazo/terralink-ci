@@ -164,6 +164,27 @@ def confirmer_reception(client, acheteur_headers, commande_id, code: str):
     )
 
 
+def livrer_comptant(client, db_session, produit_id, prix=500, qte=2) -> dict:
+    """Déroule un cycle comptant complet jusqu'à FONDS_LIBERES.
+    Renvoie {prod, ach, cid}."""
+    prod = creer_utilisateur(client, "PRODUCTEUR")
+    offre = creer_offre(client, prod["headers"], produit_id, quantite=100, prix=prix)
+    ach = creer_utilisateur(client, "ACHETEUR")
+    cmd = client.post(
+        "/api/v1/commandes",
+        headers=ach["headers"],
+        json={"lignes": [{"offre_id": offre["id"], "quantite": qte}]},
+    ).json()
+    cid = cmd["id"]
+    payer_commande(client, ach["headers"], cid)
+    client.post(f"/api/v1/commandes/{cid}/transition", headers=prod["headers"], json={"action": "PREPARER"})
+    transp = creer_transporteur_valide(client, db_session)
+    code = assigner_transporteur(client, prod["headers"], cid, transp["transporteur_id"])
+    client.post(f"/api/v1/commandes/{cid}/transition", headers=prod["headers"], json={"action": "EXPEDIER"})
+    confirmer_reception(client, ach["headers"], cid, code)
+    return {"prod": prod, "ach": ach, "cid": cid}
+
+
 def creer_interne(db_session, role: str, nom: str = "Agent Interne") -> dict:
     """Crée un utilisateur OPS/ADMIN directement en base (non inscriptible via API)
     et forge un token d'accès valide."""

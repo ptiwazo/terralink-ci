@@ -56,6 +56,17 @@ class AvanceStatut(str, enum.Enum):
     ANNULEE = "ANNULEE"        # créance annulée (résolution de litige)
 
 
+class AbonnementFormule(str, enum.Enum):
+    STANDARD = "STANDARD"
+    PREMIUM = "PREMIUM"
+
+
+class AbonnementStatut(str, enum.Enum):
+    ACTIF = "ACTIF"
+    EXPIRE = "EXPIRE"
+    ANNULE = "ANNULE"
+
+
 class TransporteurStatut(str, enum.Enum):
     """Validation d'un transporteur par l'équipe OPS (caution vérifiée)."""
 

@@ -48,6 +48,15 @@ class Settings(BaseSettings):
     credit_unit_fcfa: int = 100000
     credit_max_fcfa: int = 5000000
 
+    # --- Facturation / premium (Phase 5) ---
+    # TVA des factures en points de base (0 = exonéré ; 1800 = 18 %).
+    facture_tva_bps: int = 0
+    # Abonnement premium : prix (FCFA) et durée (jours).
+    premium_prix_fcfa: int = 25000
+    premium_duree_jours: int = 30
+    # Dossier de stockage des PDF de factures.
+    factures_dir: str = "factures"
+
 
 @lru_cache
 def get_settings() -> Settings:

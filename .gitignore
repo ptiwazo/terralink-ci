@@ -31,3 +31,6 @@ Thumbs.db
 infra/pgdata/
 infra/pg/
 
+# --- PDF de factures générés ---
+apps/api/factures/
+
