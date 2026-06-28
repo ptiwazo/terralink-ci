@@ -41,6 +41,20 @@ class ModePaiement(str, enum.Enum):
     DIFFERE = "DIFFERE"
 
 
+class TransporteurStatut(str, enum.Enum):
+    """Validation d'un transporteur par l'équipe OPS (caution vérifiée)."""
+
+    EN_ATTENTE = "EN_ATTENTE"
+    VALIDE = "VALIDE"
+    REJETE = "REJETE"
+
+
+class LivraisonStatut(str, enum.Enum):
+    ASSIGNEE = "ASSIGNEE"    # transporteur assigné, code de remise généré
+    EN_COURS = "EN_COURS"    # colis expédié
+    LIVREE = "LIVREE"        # code validé à la remise
+
+
 class EscrowStatut(str, enum.Enum):
     """Cycle de vie du séquestre d'une commande (CLAUDE.md §4)."""
 

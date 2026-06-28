@@ -4,8 +4,11 @@ Depuis la Phase 2, le passage à PAYEE_SEQUESTRE se fait via l'escrow (paiement)
 et CONFIRMER_RECEPTION libère les fonds → la commande termine en FONDS_LIBERES.
 """
 from tests.conftest import (
+    assigner_transporteur,
+    confirmer_reception,
     creer_interne,
     creer_offre,
+    creer_transporteur_valide,
     creer_utilisateur,
     payer_commande,
 )
@@ -31,7 +34,7 @@ def _transition(client, headers, commande_id, action):
     )
 
 
-def test_parcours_complet_jusqua_fonds_liberes(client, produit_id):
+def test_parcours_complet_jusqua_fonds_liberes(client, produit_id, db_session):
     prod, ach, cmd = _setup_commande(client, produit_id)
     cid = cmd["id"]
 
@@ -42,11 +45,21 @@ def test_parcours_complet_jusqua_fonds_liberes(client, produit_id):
     r = _transition(client, prod["headers"], cid, "PREPARER")
     assert r.status_code == 200 and r.json()["statut"] == "EN_PREPARATION"
 
+    transp = creer_transporteur_valide(client, db_session)
+    code = assigner_transporteur(client, prod["headers"], cid, transp["transporteur_id"])
+
     r = _transition(client, prod["headers"], cid, "EXPEDIER")
     assert r.status_code == 200 and r.json()["statut"] == "EN_LIVRAISON"
 
-    r = _transition(client, ach["headers"], cid, "CONFIRMER_RECEPTION")
+    r = confirmer_reception(client, ach["headers"], cid, code)
     assert r.status_code == 200 and r.json()["statut"] == "FONDS_LIBERES"
+
+
+def test_confirmation_via_transition_bloquee(client, produit_id):
+    """CONFIRMER_RECEPTION n'est pas exposée via /transition (code requis)."""
+    prod, ach, cmd = _setup_commande(client, produit_id)
+    r = _transition(client, ach["headers"], cmd["id"], "CONFIRMER_RECEPTION")
+    assert r.status_code == 400
 
 
 def test_preparer_par_acheteur_refuse(client, produit_id):

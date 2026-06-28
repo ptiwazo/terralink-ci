@@ -128,6 +128,42 @@ def payer_commande(client, acheteur_headers: dict, commande_id: str) -> dict:
     return resp.json()
 
 
+def creer_transporteur_valide(client, db_session, nom: str = "Transport Express") -> dict:
+    """Crée un transporteur, son profil, et le fait valider par un OPS.
+    Renvoie headers + transporteur_id + user."""
+    transp = creer_utilisateur(client, "TRANSPORTEUR", nom)
+    profil = client.post(
+        "/api/v1/transporteurs/profil",
+        headers=transp["headers"],
+        json={"vehicule": "Camionnette", "immatriculation": "CI-1234-AB", "caution_deposee": 100000},
+    )
+    assert profil.status_code == 201, profil.text
+    tid = profil.json()["id"]
+    ops = creer_interne(db_session, "OPS")
+    r = client.post(f"/api/v1/transporteurs/{tid}/valider", headers=ops["headers"])
+    assert r.status_code == 200, r.text
+    return {**transp, "transporteur_id": tid}
+
+
+def assigner_transporteur(client, prod_headers, commande_id, transporteur_id) -> str:
+    """Assigne le transporteur et renvoie le code de remise (en clair, une fois)."""
+    r = client.post(
+        f"/api/v1/commandes/{commande_id}/assigner-transporteur",
+        headers=prod_headers,
+        json={"transporteur_id": transporteur_id},
+    )
+    assert r.status_code == 200, r.text
+    return r.json()["code_remise"]
+
+
+def confirmer_reception(client, acheteur_headers, commande_id, code: str):
+    return client.post(
+        f"/api/v1/commandes/{commande_id}/confirmer-reception",
+        headers=acheteur_headers,
+        json={"code": code},
+    )
+
+
 def creer_interne(db_session, role: str, nom: str = "Agent Interne") -> dict:
     """Crée un utilisateur OPS/ADMIN directement en base (non inscriptible via API)
     et forge un token d'accès valide."""

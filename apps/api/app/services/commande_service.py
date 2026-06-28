@@ -19,7 +19,7 @@ from app.models.enums import CommandeStatut, OffreStatut, Role
 from app.models.offre import Offre
 from app.models.user import User
 from app.schemas.commande import CommandeCreate
-from app.services import audit_service, escrow_service
+from app.services import audit_service, escrow_service, livraison_service
 from app.services.state_machine import TransitionError, verifier_et_cibler
 
 
@@ -181,11 +181,53 @@ def appliquer_transition(
         details={"de": ancien.value, "vers": cible.value},
     )
 
-    # À la livraison conforme, on libère les fonds dans la MÊME transaction
-    # (livraison ⇒ paiement, tout-ou-rien). La commande termine en FONDS_LIBERES.
-    if cible == CommandeStatut.LIVREE_CONFORME:
+    # À l'expédition, la livraison (transporteur assigné) passe EN_COURS.
+    if cible == CommandeStatut.EN_LIVRAISON:
+        try:
+            livraison_service.marquer_expediee_sans_commit(db, commande)
+        except livraison_service.LivraisonError as exc:
+            raise CommandeError(exc.message, exc.status_code)
+
+    db.commit()
+    db.refresh(commande)
+    return commande
+
+
+def resoudre_litige(db: Session, commande_id: uuid.UUID, user: User, sens: str) -> Commande:
+    """Résout un litige (OPS/ADMIN) : remboursement acheteur ou libération
+    producteur. Mouvement de fonds + statut final dans une seule transaction."""
+    commande = db.get(Commande, commande_id)
+    if commande is None:
+        raise CommandeError("Commande introuvable", 404)
+
+    action = "RESOUDRE_REMBOURSEMENT" if sens == "REMBOURSE" else "RESOUDRE_LIBERATION"
+    try:
+        cible = verifier_et_cibler(
+            action=action,
+            statut_courant=commande.statut,
+            role_acteur=user.role,
+            acteur_id=user.id,
+            acheteur_id=commande.acheteur_id,
+            producteur_id=commande.producteur_id,
+            interne=True,
+        )
+    except TransitionError as exc:
+        raise CommandeError(exc.message, exc.status_code)
+
+    if sens == "REMBOURSE":
+        escrow_service.rembourser_sans_commit(db, commande, user)
+    else:
         escrow_service.liberer_fonds_sans_commit(db, commande, user)
 
+    commande.statut = cible
+    audit_service.journaliser(
+        db,
+        acteur_id=user.id,
+        action=f"COMMANDE_{action}",
+        ressource_type="commande",
+        ressource_id=commande.id,
+        details={"sens": sens, "vers": cible.value},
+    )
     db.commit()
     db.refresh(commande)
     return commande

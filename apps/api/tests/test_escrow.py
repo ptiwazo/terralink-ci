@@ -15,7 +15,14 @@ from app.services.ledger_service import (
     COMPTE_ESCROW,
     COMPTE_EXTERNE,
 )
-from tests.conftest import creer_offre, creer_utilisateur, payer_commande
+from tests.conftest import (
+    assigner_transporteur,
+    confirmer_reception,
+    creer_offre,
+    creer_transporteur_valide,
+    creer_utilisateur,
+    payer_commande,
+)
 
 
 def _commande_prete(client, produit_id, prix=500, qte=2):
@@ -55,8 +62,10 @@ def test_cycle_complet_liberation(client, produit_id, db_session):
     cid = cmd["id"]
     payer_commande(client, ach["headers"], cid)
     _transition(client, prod["headers"], cid, "PREPARER")
+    transp = creer_transporteur_valide(client, db_session)
+    code = assigner_transporteur(client, prod["headers"], cid, transp["transporteur_id"])
     _transition(client, prod["headers"], cid, "EXPEDIER")
-    r = _transition(client, ach["headers"], cid, "CONFIRMER_RECEPTION")
+    r = confirmer_reception(client, ach["headers"], cid, code)
     assert r.status_code == 200 and r.json()["statut"] == "FONDS_LIBERES"
 
     esc = client.get(f"/api/v1/commandes/{cid}/escrow", headers=ach["headers"]).json()

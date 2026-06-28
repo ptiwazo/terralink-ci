@@ -3,8 +3,10 @@ from app.models.base import Base
 from app.models.commande import Commande, LigneCommande
 from app.models.escrow import EscrowTransaction
 from app.models.ledger import LedgerEntry
+from app.models.livraison import Livraison
 from app.models.offre import Offre
 from app.models.produit import Produit
+from app.models.transporteur import Transporteur
 from app.models.user import User
 
 __all__ = [
@@ -17,4 +19,6 @@ __all__ = [
     "AuditLog",
     "EscrowTransaction",
     "LedgerEntry",
+    "Transporteur",
+    "Livraison",
 ]

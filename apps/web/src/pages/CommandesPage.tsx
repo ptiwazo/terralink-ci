@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { ApiError, api, type Commande } from "../api/client";
+import {
+  ApiError,
+  api,
+  logistique,
+  type Commande,
+  type Transporteur,
+} from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
 import {
@@ -12,7 +18,14 @@ import {
 export default function CommandesPage() {
   const { token, user } = useAuth();
   const [commandes, setCommandes] = useState<Commande[]>([]);
+  const [transporteurs, setTransporteurs] = useState<Transporteur[]>([]);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [choixTransporteur, setChoixTransporteur] = useState<Record<string, string>>({});
+  const [codeRevele, setCodeRevele] = useState<Record<string, string>>({});
+  const [codeSaisi, setCodeSaisi] = useState<Record<string, string>>({});
+
+  const role = user?.role;
+  const estProducteur = role === "PRODUCTEUR";
 
   async function charger() {
     if (!token) return;
@@ -21,32 +34,60 @@ export default function CommandesPage() {
 
   useEffect(() => {
     charger().catch(() => setErreur("Chargement impossible"));
+    if (token && estProducteur) {
+      logistique.transporteursValides(token).then(setTransporteurs).catch(() => {});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  async function transition(id: string, action: string) {
+  function wrap(fn: () => Promise<unknown>, msg: string) {
+    return async () => {
+      if (!token) return;
+      setErreur(null);
+      try {
+        await fn();
+        await charger();
+      } catch (err) {
+        setErreur(err instanceof ApiError ? err.message : msg);
+      }
+    };
+  }
+
+  async function assigner(cid: string) {
     if (!token) return;
+    const tid = choixTransporteur[cid] || transporteurs[0]?.id;
+    if (!tid) {
+      setErreur("Aucun transporteur validé disponible");
+      return;
+    }
     setErreur(null);
     try {
-      await api.transitionCommande(token, id, action);
+      const res = await logistique.assigner(token, cid, tid);
+      setCodeRevele((c) => ({ ...c, [cid]: res.code_remise }));
       await charger();
     } catch (err) {
-      setErreur(err instanceof ApiError ? err.message : "Action impossible");
+      setErreur(err instanceof ApiError ? err.message : "Assignation impossible");
     }
   }
 
-  async function payer(id: string) {
+  async function confirmer(cid: string) {
     if (!token) return;
+    const code = codeSaisi[cid];
+    if (!code) {
+      setErreur("Saisir le code de remise");
+      return;
+    }
     setErreur(null);
     try {
-      await api.payerCommande(token, id);
+      await logistique.confirmerReception(token, cid, code);
       await charger();
     } catch (err) {
-      setErreur(err instanceof ApiError ? err.message : "Paiement impossible");
+      setErreur(err instanceof ApiError ? err.message : "Confirmation impossible");
     }
   }
 
-  const peutPayer = user?.role === "ACHETEUR" || user?.role === "OPS" || user?.role === "ADMIN";
+  const peutPayer = role === "ACHETEUR" || role === "OPS" || role === "ADMIN";
+  const estOps = role === "OPS" || role === "ADMIN";
 
   return (
     <Layout>
@@ -56,7 +97,7 @@ export default function CommandesPage() {
       <div className="space-y-3">
         {commandes.length === 0 && <p className="text-sm text-gray-500">Aucune commande.</p>}
         {commandes.map((c) => {
-          const actions = user ? actionsDisponibles(c.statut, user.role) : [];
+          const actions = role ? actionsDisponibles(c.statut, role) : [];
           return (
             <div key={c.id} className="rounded-xl bg-white p-4 shadow">
               <div className="flex items-start justify-between">
@@ -73,25 +114,88 @@ export default function CommandesPage() {
                   {STATUT_LABELS[c.statut] ?? c.statut}
                 </span>
               </div>
-              <div className="mt-3 flex gap-2">
-                {c.statut === "CREEE" && peutPayer && (
-                  <button
-                    onClick={() => payer(c.id)}
-                    className="rounded-lg bg-terra-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-terra-800"
+
+              {/* Paiement (acheteur) */}
+              {c.statut === "CREEE" && peutPayer && (
+                <button onClick={wrap(() => api.payerCommande(token!, c.id), "Paiement impossible")}
+                  className="mt-3 rounded-lg bg-terra-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-terra-800">
+                  Payer (séquestre)
+                </button>
+              )}
+
+              {/* Assignation transporteur (producteur) */}
+              {estProducteur && c.statut === "EN_PREPARATION" && (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <select
+                    value={choixTransporteur[c.id] ?? ""}
+                    onChange={(e) => setChoixTransporteur((s) => ({ ...s, [c.id]: e.target.value }))}
+                    className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
                   >
-                    Payer (séquestre)
+                    <option value="">Choisir un transporteur…</option>
+                    {transporteurs.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.vehicule} ({t.immatriculation})
+                      </option>
+                    ))}
+                  </select>
+                  <button onClick={() => assigner(c.id)}
+                    className="rounded-lg bg-terra-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-terra-800">
+                    Assigner
                   </button>
-                )}
-                {actions.map((a) => (
-                  <button
-                    key={a.action}
-                    onClick={() => transition(c.id, a.action)}
-                    className="rounded-lg bg-terra-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-terra-800"
-                  >
-                    {a.label}
+                </div>
+              )}
+
+              {/* Code de remise révélé (une fois) */}
+              {codeRevele[c.id] && (
+                <div className="mt-2 rounded bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                  Code de remise : <b>{codeRevele[c.id]}</b> — à remettre au transporteur.
+                </div>
+              )}
+
+              {/* Confirmation par code (acheteur) */}
+              {role === "ACHETEUR" && c.statut === "EN_LIVRAISON" && (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <input
+                    placeholder="Code de remise"
+                    value={codeSaisi[c.id] ?? ""}
+                    onChange={(e) => setCodeSaisi((s) => ({ ...s, [c.id]: e.target.value }))}
+                    className="w-36 rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+                  />
+                  <button onClick={() => confirmer(c.id)}
+                    className="rounded-lg bg-terra-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-terra-800">
+                    Confirmer réception
                   </button>
-                ))}
-              </div>
+                </div>
+              )}
+
+              {/* Résolution de litige (OPS) */}
+              {estOps && c.statut === "LITIGE" && (
+                <div className="mt-3 flex gap-2">
+                  <button onClick={wrap(() => logistique.resoudre(token!, c.id, "REMBOURSE"), "Échec")}
+                    className="rounded-lg bg-orange-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-700">
+                    Rembourser l'acheteur
+                  </button>
+                  <button onClick={wrap(() => logistique.resoudre(token!, c.id, "LIBERE"), "Échec")}
+                    className="rounded-lg bg-terra-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-terra-800">
+                    Libérer au producteur
+                  </button>
+                </div>
+              )}
+
+              {/* Transitions génériques (préparer/expédier/litige) */}
+              {actions.length > 0 && (
+                <div className="mt-3 flex gap-2">
+                  {actions.map((a) => (
+                    <button key={a.action}
+                      onClick={wrap(() => api.transitionCommande(token!, c.id, a.action), "Action impossible")}
+                      className={`rounded-lg px-3 py-1.5 text-sm font-medium text-white ${
+                        a.action === "SIGNALER_LITIGE" ? "bg-red-600 hover:bg-red-700" : "bg-terra-700 hover:bg-terra-800"
+                      }`}>
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}

@@ -3,26 +3,34 @@
 Place de marché B2B agricole pour la Côte d'Ivoire (escrow, trésorerie, logistique).
 Interface en français. Voir [CLAUDE.md](./CLAUDE.md) pour la spécification complète.
 
-> **État actuel : Phase 2 — Escrow (cœur financier).**
-> Phase 0 : auth téléphone, rôles, contrôle d'accès serveur, tableau de bord.
-> Phase 1 : catalogue, offres géolocalisées, commandes (montant serveur +
-> stock atomique), machine à états explicite.
-> Phase 2 : **grand livre append-only en partie double**, séquestre des fonds à
-> la commande (dépôt confirmé par **webhook signé**), **libération à la livraison
-> conforme** avec commission plateforme, via une abstraction `PaymentProvider`
-> (`SandboxProvider` actif ; squelette Mobile Money). Idempotence (clés +
-> contrainte unique), double validation des montants, atomicité tout-ou-rien.
-> Les phases suivantes (logistique, trésorerie) ne sont pas encore implémentées.
+> **État actuel : Phase 3 — Logistique sécurisée (pilote complet 0→3).**
+> Phase 0 : auth, rôles, contrôle d'accès. Phase 1 : catalogue, offres, commandes
+> (montant serveur + stock atomique), machine à états. Phase 2 : escrow (grand
+> livre append-only, séquestre via webhook signé, libération avec commission).
+> Phase 3 : **transporteurs** (profil + caution + validation OPS), **assignation +
+> code de remise haché** (révélé une fois, à remettre au transporteur),
+> **confirmation de réception uniquement avec le bon code**, traçabilité GPS,
+> réf. d'assurance, et **litige** qui **bloque la libération** (résolution OPS :
+> remboursement acheteur ou libération producteur). Les phases 4-5 (trésorerie,
+> facturation/premium) ne sont pas encore implémentées.
 
 ### Parcours Phase 1-2 (dans le navigateur)
 
 1. Compte **Producteur** → **Mes offres** → publier une offre (prix FCFA, géoloc).
 2. Compte **Acheteur** → **Catalogue** → saisir une quantité, **Commander**.
-3. **Commandes** : l'acheteur clique **Payer (séquestre)** → les fonds sont
-   séquestrés (dépôt + webhook signé en sandbox), la commande passe *Payée
-   (séquestre)*. Le producteur **Prépare** puis **Expédie**. L'acheteur
-   **Confirme réception** → les fonds sont **libérés** (commission prélevée,
-   payout producteur), la commande passe *Fonds libérés*.
+3. **Commandes** : l'acheteur clique **Payer (séquestre)** → fonds séquestrés
+   (dépôt + webhook signé), commande *Payée (séquestre)*. Le producteur
+   **Prépare**, **Assigne** un transporteur validé (un **code de remise** s'affiche,
+   à donner au transporteur), puis **Expédie**. L'acheteur saisit le **code de
+   remise** et **Confirme réception** → fonds **libérés** (commission + payout),
+   commande *Fonds libérés*.
+4. **Litige** : tant que la commande est *En livraison*, l'acheteur peut
+   **Signaler un litige** → la libération est bloquée. Un compte **OPS** résout
+   (rembourser l'acheteur ou libérer le producteur).
+
+Comptes de démo (mot de passe `motdepasse123`) : producteur `+2250700000010`,
+acheteur `+2250700000020`, OPS `+2250700000099`, transporteur validé
+`+2250700000030`.
 
 ### Notes Escrow (Phase 2)
 

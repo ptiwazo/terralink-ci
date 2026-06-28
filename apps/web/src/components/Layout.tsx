@@ -12,10 +12,12 @@ const LIENS_PAR_ROLE: Record<Role, Lien[]> = {
   ADMIN: [
     { to: "/", label: "Accueil" },
     { to: "/commandes", label: "Commandes" },
+    { to: "/transporteurs", label: "Transporteurs" },
   ],
   OPS: [
     { to: "/", label: "Accueil" },
     { to: "/commandes", label: "Commandes" },
+    { to: "/transporteurs", label: "Transporteurs" },
   ],
   PRODUCTEUR: [
     { to: "/", label: "Accueil" },
@@ -27,7 +29,10 @@ const LIENS_PAR_ROLE: Record<Role, Lien[]> = {
     { to: "/catalogue", label: "Catalogue" },
     { to: "/commandes", label: "Commandes" },
   ],
-  TRANSPORTEUR: [{ to: "/", label: "Accueil" }],
+  TRANSPORTEUR: [
+    { to: "/", label: "Accueil" },
+    { to: "/transporteur", label: "Mon profil" },
+  ],
 };
 
 export default function Layout({ children }: { children: ReactNode }) {

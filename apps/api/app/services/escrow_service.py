@@ -161,8 +161,9 @@ def traiter_webhook(db: Session, evenement: dict) -> EscrowTransaction:
 
 
 def liberer_fonds_sans_commit(db: Session, commande: Commande, acteur: User) -> None:
-    """Libère les fonds à la livraison conforme. NE COMMIT PAS : s'exécute dans
-    la même transaction que le passage LIVREE_CONFORME → FONDS_LIBERES."""
+    """Libère les fonds au producteur. NE COMMIT PAS et NE FIXE PAS le statut de
+    la commande : le caller (confirmation de réception ou résolution de litige)
+    pose le statut final dans la même transaction."""
     escrow = get_escrow(db, commande.id)
     if escrow is None:
         raise EscrowError("Aucun séquestre pour cette commande", 409)
@@ -210,7 +211,6 @@ def liberer_fonds_sans_commit(db: Session, commande: Commande, acteur: User) -> 
     escrow.commission = commission
     escrow.montant_net = net
     escrow.ref_paiement = paiement.ref_transaction
-    commande.statut = CommandeStatut.FONDS_LIBERES
     audit_service.journaliser(
         db,
         acteur_id=acteur.id,
@@ -218,4 +218,39 @@ def liberer_fonds_sans_commit(db: Session, commande: Commande, acteur: User) -> 
         ressource_type="commande",
         ressource_id=commande.id,
         details={"commission": commission, "net": net},
+    )
+
+
+def rembourser_sans_commit(db: Session, commande: Commande, acteur: User) -> None:
+    """Rembourse l'acheteur (résolution de litige). NE COMMIT PAS.
+
+    Les fonds séquestrés repartent vers l'extérieur (acheteur). Aucun payout
+    producteur, aucune commission."""
+    escrow = get_escrow(db, commande.id)
+    if escrow is None:
+        raise EscrowError("Aucun séquestre pour cette commande", 409)
+    if escrow.statut == EscrowStatut.REMBOURSE:
+        return
+    if escrow.statut != EscrowStatut.SEQUESTRE:
+        raise EscrowError("Les fonds ne sont pas séquestrés", 409)
+
+    # ESCROW -> EXTERNE (retour à l'acheteur).
+    ledger_service.poster(
+        db,
+        type="REMBOURSEMENT",
+        ref_idempotence=f"refund:{commande.id}",
+        ref_commande=commande.id,
+        legs=[
+            (ledger_service.COMPTE_ESCROW, -escrow.montant, ledger_service.COMPTE_EXTERNE),
+            (ledger_service.COMPTE_EXTERNE, escrow.montant, ledger_service.COMPTE_ESCROW),
+        ],
+    )
+    escrow.statut = EscrowStatut.REMBOURSE
+    audit_service.journaliser(
+        db,
+        acteur_id=acteur.id,
+        action="ESCROW_REMBOURSE",
+        ressource_type="commande",
+        ressource_id=commande.id,
+        details={"montant": escrow.montant},
     )

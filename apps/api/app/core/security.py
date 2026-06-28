@@ -5,6 +5,7 @@
   signés HS256. Le champ `type` distingue les deux pour éviter qu'un refresh
   serve d'access et inversement.
 """
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -25,6 +26,22 @@ def hash_password(plain: str) -> str:
 
 def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
+
+
+def generer_code_remise() -> str:
+    """Code de remise à 6 chiffres (remis au transporteur, haché en base)."""
+    return f"{secrets.randbelow(1_000_000):06d}"
+
+
+def hash_code(code: str) -> str:
+    return pwd_context.hash(code)
+
+
+def verify_code(code: str, hashed: str) -> bool:
+    try:
+        return pwd_context.verify(code, hashed)
+    except (ValueError, TypeError):
+        return False
 
 
 def _create_token(subject: str, token_type: str, expires_delta: timedelta) -> str:

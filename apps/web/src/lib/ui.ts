@@ -26,6 +26,9 @@ export const STATUT_COULEUR: Record<string, string> = {
   LIVREE_CONFORME: "bg-green-100 text-green-700",
   FONDS_LIBERES: "bg-green-100 text-green-800",
   CLOTUREE: "bg-green-100 text-green-800",
+  LITIGE: "bg-red-100 text-red-700",
+  RESOLUE_REMBOURSEE: "bg-orange-100 text-orange-700",
+  RESOLUE_LIBEREE: "bg-green-100 text-green-800",
 };
 
 interface ActionDispo {
@@ -48,8 +51,10 @@ export function actionsDisponibles(statut: string, role: Role): ActionDispo[] {
         ? [{ action: "EXPEDIER", label: "Expédier" }]
         : [];
     case "EN_LIVRAISON":
+      // La confirmation de réception passe par un code de remise (UI dédiée).
+      // Ici on n'expose que le signalement de litige.
       return role === "ACHETEUR" || role === "OPS" || role === "ADMIN"
-        ? [{ action: "CONFIRMER_RECEPTION", label: "Confirmer réception" }]
+        ? [{ action: "SIGNALER_LITIGE", label: "Signaler un litige" }]
         : [];
     default:
       return [];
