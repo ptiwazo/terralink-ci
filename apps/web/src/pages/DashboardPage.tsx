@@ -12,6 +12,8 @@ const SECTION_LIENS: Record<string, string> = {
   "Mes commandes": "/commandes",
   Commandes: "/commandes",
   Transporteurs: "/transporteurs",
+  "Mes courses": "/mes-courses",
+  "Livraisons à confirmer": "/mes-courses",
 };
 
 interface Dashboard {

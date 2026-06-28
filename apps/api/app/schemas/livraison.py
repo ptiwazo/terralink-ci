@@ -42,3 +42,13 @@ class AssignationResponse(BaseModel):
 
     livraison: LivraisonPublic
     code_remise: str
+
+
+class CoursePublic(BaseModel):
+    """Une course du transporteur : la livraison + un résumé de la commande."""
+
+    livraison: LivraisonPublic
+    commande_id: uuid.UUID
+    commande_statut: str
+    montant: int
+    produits: str

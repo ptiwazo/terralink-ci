@@ -39,6 +39,24 @@ def get_livraison(db: Session, commande_id: uuid.UUID) -> Livraison | None:
     return db.scalar(select(Livraison).where(Livraison.commande_id == commande_id))
 
 
+def mes_courses(db: Session, user: User) -> list[tuple[Livraison, Commande]]:
+    """Livraisons assignées au transporteur courant, avec leur commande."""
+    transporteur = db.scalar(select(Transporteur).where(Transporteur.user_id == user.id))
+    if transporteur is None:
+        return []
+    livraisons = db.scalars(
+        select(Livraison)
+        .where(Livraison.transporteur_id == transporteur.id)
+        .order_by(Livraison.created_at.desc())
+    )
+    courses: list[tuple[Livraison, Commande]] = []
+    for liv in livraisons:
+        cmd = db.get(Commande, liv.commande_id)
+        if cmd is not None:
+            courses.append((liv, cmd))
+    return courses
+
+
 def _commande_du_producteur_ou_ops(commande: Commande, user: User) -> None:
     if user.role in (Role.OPS, Role.ADMIN):
         return

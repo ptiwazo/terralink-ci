@@ -250,6 +250,14 @@ export interface AssignationResponse {
   code_remise: string;
 }
 
+export interface Course {
+  livraison: Livraison;
+  commande_id: string;
+  commande_statut: string;
+  montant: number;
+  produits: string;
+}
+
 export const logistique = {
   transporteursValides: (token: string) =>
     request<Transporteur[]>("/transporteurs/valides", {}, token),
@@ -287,6 +295,15 @@ export const logistique = {
     request<Commande>(
       `/commandes/${commandeId}/confirmer-reception`,
       { method: "POST", body: JSON.stringify({ code }) },
+      token
+    ),
+
+  mesCourses: (token: string) => request<Course[]>("/transporteurs/mes-courses", {}, token),
+
+  ajouterPosition: (token: string, commandeId: string, lat: number, lng: number) =>
+    request<Livraison>(
+      `/commandes/${commandeId}/position`,
+      { method: "POST", body: JSON.stringify({ lat, lng }) },
       token
     ),
 

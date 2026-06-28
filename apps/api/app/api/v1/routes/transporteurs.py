@@ -7,8 +7,9 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user, get_db, require_roles
 from app.models.enums import Role, TransporteurStatut
 from app.models.user import User
+from app.schemas.livraison import CoursePublic
 from app.schemas.transporteur import TransporteurCreate, TransporteurPublic
-from app.services import transporteur_service
+from app.services import livraison_service, transporteur_service
 from app.services.transporteur_service import TransporteurError
 
 router = APIRouter(prefix="/transporteurs", tags=["transporteurs"])
@@ -39,6 +40,24 @@ def mon_profil(
     if profil is None:
         raise HTTPException(status_code=404, detail="Aucun profil transporteur")
     return profil
+
+
+@router.get("/mes-courses", response_model=list[CoursePublic])
+def mes_courses(
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles(Role.TRANSPORTEUR)),
+):
+    courses = livraison_service.mes_courses(db, user)
+    return [
+        CoursePublic(
+            livraison=liv,
+            commande_id=cmd.id,
+            commande_statut=cmd.statut.value,
+            montant=cmd.montant_total,
+            produits=", ".join(f"{l.quantite} × {l.produit.nom}" for l in cmd.lignes),
+        )
+        for liv, cmd in courses
+    ]
 
 
 @router.get("/valides", response_model=list[TransporteurPublic])

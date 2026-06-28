@@ -37,6 +37,7 @@ const LIENS_PAR_ROLE: Record<Role, Lien[]> = {
   ],
   TRANSPORTEUR: [
     { to: "/", label: "Accueil" },
+    { to: "/mes-courses", label: "Mes courses" },
     { to: "/transporteur", label: "Mon profil" },
   ],
 };

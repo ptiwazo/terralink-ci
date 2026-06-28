@@ -138,6 +138,20 @@ def test_confirmation_bon_code_libere(client, produit_id, db_session):
 
 # --- Traçabilité GPS ---
 
+def test_mes_courses_transporteur(client, produit_id, db_session):
+    prod, ach, cmd = _commande_payee(client, produit_id)
+    cid = cmd["id"]
+    transp = creer_transporteur_valide(client, db_session)
+    assigner_transporteur(client, prod["headers"], cid, transp["transporteur_id"])
+    _expedier(client, prod["headers"], cid)
+
+    courses = client.get("/api/v1/transporteurs/mes-courses", headers=transp["headers"]).json()
+    assert len(courses) == 1
+    assert courses[0]["commande_id"] == cid
+    assert courses[0]["livraison"]["statut"] == "EN_COURS"
+    assert "×" in courses[0]["produits"]
+
+
 def test_position_par_transporteur_assigne(client, produit_id, db_session):
     prod, ach, cmd = _commande_payee(client, produit_id)
     cid = cmd["id"]
