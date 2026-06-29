@@ -9,6 +9,7 @@ import RegisterPage from "./pages/RegisterPage";
 import AcheteurPage from "./pages/AcheteurPage";
 import KpisPage from "./pages/KpisPage";
 import MesCoursesPage from "./pages/MesCoursesPage";
+import MesPaiementsPage from "./pages/MesPaiementsPage";
 import PrevisionsPage from "./pages/PrevisionsPage";
 import TransporteurPage from "./pages/TransporteurPage";
 import TransporteursAdminPage from "./pages/TransporteursAdminPage";
@@ -29,6 +30,7 @@ export default function App() {
       <Route path="/commandes" element={<Protege><CommandesPage /></Protege>} />
       <Route path="/transporteur" element={<Protege><TransporteurPage /></Protege>} />
       <Route path="/mes-courses" element={<Protege><MesCoursesPage /></Protege>} />
+      <Route path="/paiements" element={<Protege><MesPaiementsPage /></Protege>} />
       <Route path="/transporteurs" element={<Protege><TransporteursAdminPage /></Protege>} />
       <Route path="/acheteur" element={<Protege><AcheteurPage /></Protege>} />
       <Route path="/tresorerie" element={<Protege><TresoreriePage /></Protege>} />

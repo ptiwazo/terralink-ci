@@ -504,4 +504,23 @@ export const analytics = {
   kpis: (token: string) => request<Kpis>("/kpis", {}, token),
 };
 
+export interface PaiementItem {
+  commande_id: string;
+  type: "ESCROW" | "AVANCE";
+  montant: number;
+  statut: string;
+  date: string | null;
+  produits: string;
+}
+
+export interface MesPaiements {
+  total_recu: number;
+  nb: number;
+  paiements: PaiementItem[];
+}
+
+export const paiementsApi = {
+  mesPaiements: (token: string) => request<MesPaiements>("/paiements/mes", {}, token),
+};
+
 export { ApiError };

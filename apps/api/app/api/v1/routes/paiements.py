@@ -10,14 +10,24 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user, get_db
+from app.core.deps import get_current_user, get_db, require_roles
+from app.models.enums import Role
 from app.models.user import User
 from app.schemas.escrow import EscrowPublic, WebhookPaiement
-from app.services import commande_service, escrow_service
+from app.services import commande_service, escrow_service, paiement_service
 from app.services.commande_service import CommandeError
 from app.services.escrow_service import EscrowError
 
 router = APIRouter(tags=["paiements"])
+
+
+@router.get("/paiements/mes")
+def mes_paiements(
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles(Role.PRODUCTEUR)),
+) -> dict:
+    """Historique des paiements reçus par le producteur (escrow + avances)."""
+    return paiement_service.paiements_producteur(db, user)
 
 
 @router.post("/commandes/{commande_id}/payer", response_model=EscrowPublic)

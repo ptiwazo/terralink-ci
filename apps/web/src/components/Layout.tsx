@@ -27,6 +27,7 @@ const LIENS_PAR_ROLE: Record<Role, Lien[]> = {
     { to: "/", label: "Accueil" },
     { to: "/offres", label: "Mes offres" },
     { to: "/commandes", label: "Commandes" },
+    { to: "/paiements", label: "Mes paiements" },
     { to: "/previsions", label: "Prévisions" },
   ],
   ACHETEUR: [
