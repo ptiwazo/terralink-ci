@@ -7,6 +7,7 @@ databases:
     databaseName: terralink
     user: terralink
     plan: free # 90 jours en gratuit ; passer à un plan payant pour la prod réelle
+    region: frankfurt # DOIT être la même région que le service web (réseau privé)
 
 services:
   - type: web
