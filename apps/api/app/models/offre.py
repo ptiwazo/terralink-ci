@@ -42,6 +42,7 @@ class Offre(Base):
     qualite: Mapped[str | None] = mapped_column(String(120), nullable=True)
     dispo_le: Mapped[date] = mapped_column(Date, nullable=False)
 
+    ville: Mapped[str | None] = mapped_column(String(120), nullable=True)
     lat: Mapped[float | None] = mapped_column(Float, nullable=True)
     lng: Mapped[float | None] = mapped_column(Float, nullable=True)
 

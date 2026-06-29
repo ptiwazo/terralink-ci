@@ -89,6 +89,7 @@ export interface Offre {
   prix_unitaire: number;
   qualite: string | null;
   dispo_le: string;
+  ville: string | null;
   lat: number | null;
   lng: number | null;
   statut: "DISPONIBLE" | "EPUISEE" | "RETIREE";
@@ -106,6 +107,7 @@ export interface OffrePayload {
   prix_unitaire: number;
   qualite?: string | null;
   dispo_le: string;
+  ville?: string | null;
   lat?: number | null;
   lng?: number | null;
 }

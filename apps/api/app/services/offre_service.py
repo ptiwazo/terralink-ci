@@ -39,6 +39,7 @@ def creer_offre(db: Session, producteur: User, data: OffreCreate) -> Offre:
         prix_unitaire=data.prix_unitaire,
         qualite=data.qualite,
         dispo_le=data.dispo_le,
+        ville=data.ville,
         lat=data.lat,
         lng=data.lng,
         statut=OffreStatut.DISPONIBLE,

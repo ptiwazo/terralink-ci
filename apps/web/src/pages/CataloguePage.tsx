@@ -95,6 +95,7 @@ export default function CataloguePage() {
                 </div>
                 <div className="text-xs text-gray-400">
                   Stock {offre.quantite_disponible} · dispo {offre.dispo_le}
+                  {offre.ville ? ` · ${offre.ville}` : ""}
                   {distance_km != null ? ` · ${distance_km.toFixed(1)} km` : ""}
                 </div>
               </div>

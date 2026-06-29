@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { ApiError, api, type Offre, type Produit } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
+import MapPicker from "../components/MapPicker";
 import { formatFCFA } from "../lib/ui";
+import { CENTRE_CI, VILLES_CI } from "../lib/villes";
 
 export default function OffresPage() {
   const { token } = useAuth();
@@ -17,9 +19,10 @@ export default function OffresPage() {
     prix_unitaire: "",
     qualite: "",
     dispo_le: "",
-    lat: "",
-    lng: "",
+    ville: "",
   });
+  const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [centre, setCentre] = useState(CENTRE_CI);
 
   async function charger() {
     if (!token) return;
@@ -38,6 +41,30 @@ export default function OffresPage() {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
+  function choisirVille(nom: string) {
+    set("ville", nom);
+    const v = VILLES_CI.find((x) => x.nom === nom);
+    if (v) {
+      setCentre({ lat: v.lat, lng: v.lng });
+      setPosition({ lat: v.lat, lng: v.lng }); // point pré-placé, affinable sur la carte
+    }
+  }
+
+  function positionActuelle() {
+    if (!navigator.geolocation) {
+      setErreur("Géolocalisation indisponible — choisissez une ville ou cliquez sur la carte");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        const c = { lat: p.coords.latitude, lng: p.coords.longitude };
+        setPosition(c);
+        setCentre(c);
+      },
+      () => setErreur("Position refusée — choisissez une ville ou cliquez sur la carte")
+    );
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!token) return;
@@ -50,10 +77,12 @@ export default function OffresPage() {
         prix_unitaire: Number(form.prix_unitaire),
         qualite: form.qualite || null,
         dispo_le: form.dispo_le,
-        lat: form.lat ? Number(form.lat) : null,
-        lng: form.lng ? Number(form.lng) : null,
+        ville: form.ville || null,
+        lat: position?.lat ?? null,
+        lng: position?.lng ?? null,
       });
       setForm((f) => ({ ...f, quantite_disponible: "", prix_unitaire: "", qualite: "" }));
+      setPosition(null);
       await charger();
     } catch (err) {
       setErreur(err instanceof ApiError ? err.message : "Création impossible");
@@ -110,15 +139,36 @@ export default function OffresPage() {
             Qualité
             <input value={form.qualite} onChange={(e) => set("qualite", e.target.value)} placeholder="ex: Premier choix" className={champ} />
           </label>
-          <label className="text-sm">
-            Latitude
-            <input type="number" step="any" value={form.lat} onChange={(e) => set("lat", e.target.value)} placeholder="5.345" className={champ} />
-          </label>
-          <label className="text-sm">
-            Longitude
-            <input type="number" step="any" value={form.lng} onChange={(e) => set("lng", e.target.value)} placeholder="-4.024" className={champ} />
+          <label className="col-span-2 text-sm">
+            Ville
+            <select value={form.ville} onChange={(e) => choisirVille(e.target.value)} className={champ}>
+              <option value="">— Choisir une ville —</option>
+              {VILLES_CI.map((v) => (
+                <option key={v.nom} value={v.nom}>{v.nom}</option>
+              ))}
+            </select>
           </label>
         </div>
+
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-sm font-medium">Position du produit</span>
+            <button type="button" onClick={positionActuelle}
+              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              📍 Ma position actuelle
+            </button>
+          </div>
+          <p className="mb-2 text-xs text-gray-400">
+            Choisissez votre ville puis, si besoin, cliquez sur la carte (ou déplacez le repère) pour préciser l'emplacement exact.
+          </p>
+          <MapPicker value={position} center={centre} onChange={(lat, lng) => setPosition({ lat, lng })} />
+          {position && (
+            <p className="mt-1 text-xs text-gray-400">
+              Point sélectionné : {position.lat.toFixed(4)}, {position.lng.toFixed(4)}
+            </p>
+          )}
+        </div>
+
         <button disabled={enCours} className="rounded-lg bg-terra-700 px-4 py-2 font-medium text-white hover:bg-terra-800 disabled:opacity-60">
           {enCours ? "Publication…" : "Publier l'offre"}
         </button>
@@ -133,7 +183,8 @@ export default function OffresPage() {
                 {o.produit.nom} · {formatFCFA(o.prix_unitaire)}/{o.produit.unite}
               </div>
               <div className="text-sm text-gray-500">
-                Stock : {o.quantite_disponible} · dispo {o.dispo_le} ·{" "}
+                Stock : {o.quantite_disponible} · dispo {o.dispo_le}
+                {o.ville ? ` · ${o.ville}` : ""} ·{" "}
                 <span className={o.statut === "DISPONIBLE" ? "text-green-600" : "text-gray-400"}>{o.statut}</span>
               </div>
             </div>

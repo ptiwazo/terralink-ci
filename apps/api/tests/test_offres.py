@@ -12,6 +12,25 @@ def test_producteur_cree_offre(client, produit_id):
     assert offre["producteur"]["id"] == prod["user"]["id"]
 
 
+def test_offre_avec_ville(client, produit_id):
+    prod = creer_utilisateur(client, "PRODUCTEUR")
+    resp = client.post(
+        "/api/v1/offres",
+        headers=prod["headers"],
+        json={
+            "produit_id": produit_id,
+            "quantite_disponible": 10,
+            "prix_unitaire": 500,
+            "dispo_le": "2026-09-01",
+            "ville": "Bouaké",
+            "lat": 7.69,
+            "lng": -5.03,
+        },
+    )
+    assert resp.status_code == 201
+    assert resp.json()["ville"] == "Bouaké"
+
+
 def test_acheteur_ne_peut_pas_creer_offre(client, produit_id):
     ach = creer_utilisateur(client, "ACHETEUR")
     resp = client.post(

@@ -21,6 +21,7 @@ class OffreCreate(BaseModel):
     prix_unitaire: int = Field(gt=0, description="Prix unitaire en FCFA (entier)")
     qualite: str | None = Field(default=None, max_length=120)
     dispo_le: date
+    ville: str | None = Field(default=None, max_length=120)
     lat: float | None = Field(default=None, ge=-90, le=90)
     lng: float | None = Field(default=None, ge=-180, le=180)
 
@@ -30,6 +31,7 @@ class OffreUpdate(BaseModel):
     prix_unitaire: int | None = Field(default=None, gt=0)
     qualite: str | None = Field(default=None, max_length=120)
     dispo_le: date | None = None
+    ville: str | None = Field(default=None, max_length=120)
     lat: float | None = Field(default=None, ge=-90, le=90)
     lng: float | None = Field(default=None, ge=-180, le=180)
     statut: OffreStatut | None = None
@@ -46,6 +48,7 @@ class OffrePublic(BaseModel):
     prix_unitaire: int
     qualite: str | None
     dispo_le: date
+    ville: str | None
     lat: float | None
     lng: float | None
     statut: OffreStatut
