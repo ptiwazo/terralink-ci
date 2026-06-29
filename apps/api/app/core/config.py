@@ -45,6 +45,14 @@ class Settings(BaseSettings):
     # Environnement
     environment: str = "dev"
 
+    # --- Compte admin initial (bootstrap au démarrage) ---
+    # Si renseignés ET qu'aucun ADMIN/OPS n'existe encore, un compte est créé
+    # au démarrage. Débloque l'accès OPS en prod sans shell.
+    admin_telephone: str = ""
+    admin_password: str = ""
+    admin_nom: str = "Administrateur"
+    admin_role: str = "ADMIN"
+
     # --- Paiement / Escrow (Phase 2) ---
     # Fournisseur de paiement actif : "sandbox" (dev/tests) ou "mobile_money".
     payment_provider: str = "sandbox"

@@ -39,3 +39,13 @@ services:
       # URL du front Netlify (à ajuster avec ton vrai sous-domaine Netlify).
       - key: FRONTEND_ORIGIN
         value: https://terralink-ci.netlify.app
+      # Compte admin initial créé au démarrage (valeurs saisies dans le dashboard
+      # Render, jamais dans le dépôt). Renseigner TELEPHONE + PASSWORD pour activer.
+      - key: ADMIN_TELEPHONE
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_NOM
+        sync: false
+      - key: ADMIN_ROLE
+        value: ADMIN

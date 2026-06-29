@@ -49,8 +49,19 @@ git push -u origin main
 
 ## 5. Créer le premier administrateur
 
-ADMIN/OPS ne sont pas auto-inscriptibles. Sur **Render** → service → **Shell** :
+ADMIN/OPS ne sont pas auto-inscriptibles.
 
+**Méthode recommandée (variables d'environnement, sans shell) :**
+Sur **Render** → service `terralink-api` → **Environment**, ajoute :
+- `ADMIN_TELEPHONE` = ex. `+2250700000099`
+- `ADMIN_PASSWORD` = un mot de passe fort
+- (optionnel) `ADMIN_NOM` = `Administrateur`, `ADMIN_ROLE` = `ADMIN` (ou `OPS`)
+
+Sauvegarde → Render redéploie. **Au démarrage**, si aucun ADMIN/OPS n'existe,
+le compte est créé automatiquement. Connecte-toi ensuite avec ces identifiants.
+> C'est idempotent : une fois le compte créé, le bootstrap ne refait rien.
+
+**Alternative (Render Shell) :**
 ```bash
 python scripts/creer_admin.py +2250700000099 "Agent OPS" UnMotDePasseFort OPS
 ```
